@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>context_free_grammar_parser</name>
+  <name>grammar_parser</name>
   <version>0.0.0</version>
   <description>The grammar_parser package</description>
 
