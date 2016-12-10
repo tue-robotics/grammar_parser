@@ -113,6 +113,14 @@ class Option:
             ret += conj.pretty_print()
         ret += "])"
         return ret
+
+    def graphviz_id(self):
+        return "Option '{lsem}'".format(lsem=self.lsemantic).replace('"', '').replace(":","")
+
+    def to_graphviz(self, graph):
+        for conj in self.conjuncts:
+            graph.edge(self.graphviz_id(), conj.graphviz_id())
+            conj.to_graphviz(graph)
 # ----------------------------------------------------------------------------------------------------
 
 class Conjunct:
@@ -140,6 +148,12 @@ class Conjunct:
             return self.rsemantic + "=" + self.name# + str(self)
         else:
             return bcolors.OKGREEN + self.name + bcolors.ENDC# + str(self)
+
+    def graphviz_id(self):
+        return "Conjunct {name}".format(name=self.name)
+
+    def to_graphviz(self, graph):
+        graph.node(self.graphviz_id())
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -179,6 +193,14 @@ class Rule:
         for option in self.options:
             ret += option.pretty_print(level=level+1)
         return ret
+
+    def graphviz_id(self):
+        return "Rule {lname}".format(lname=self.lname)
+
+    def to_graphviz(self, graph):
+        for opt in self.options:
+            graph.edge(self.graphviz_id(), opt.graphviz_id())
+            opt.to_graphviz(graph)
 # ----------------------------------------------------------------------------------------------------
 
 class Tree:
@@ -393,3 +415,11 @@ class CFGParser:
             next_words += self._next_word((subtree, 0), words)
 
         return next_words
+
+    def graphviz_id(self):
+        return "CFGParser"
+
+    def to_graphviz(self, graph):
+        for name, rule in self.rules.iteritems():
+            graph.edge(self.graphviz_id(), rule.graphviz_id())
+            rule.to_graphviz(graph)
