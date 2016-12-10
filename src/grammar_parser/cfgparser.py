@@ -423,3 +423,16 @@ class CFGParser:
         for name, rule in self.rules.iteritems():
             graph.edge(self.graphviz_id(), rule.graphviz_id())
             rule.to_graphviz(graph)
+
+    def visualize_options(self, graph, target_rule, previous_words=None):
+        previous_words = [] if not previous_words else previous_words
+
+        if previous_words:
+            previous_word = previous_words[-1]
+        else:
+            previous_word = target_rule
+
+        graph.node(previous_word)
+        next_words = self.next_word(target_rule, previous_words)
+        print next_words
+        graph.edges([(previous_word, next_word) for next_word in next_words])
