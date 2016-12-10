@@ -441,3 +441,22 @@ class CFGParser:
             for next_word in next_words:
                 graph.edge(previous_word, next_word)
                 self.visualize_options(graph, target_rule, previous_words+[next_word], depth=depth-1)
+
+if __name__ == "__main__":
+    import sys
+    import graphviz
+
+    parser = CFGParser.fromfile(sys.argv[1])
+    rule = sys.argv[2]
+    depth = sys.argv[3]
+
+    parser.set_function("id", lambda x: [Option("id", [Conjunct("id")])])
+    parser.set_function("type", lambda x: [Option("type", [Conjunct("type")])])
+    parser.set_function("number", lambda x: [Option("number", [Conjunct("number")])])
+    parser.set_function("property", lambda x: [Option("property", [Conjunct("property")])])
+
+
+    g = graphviz.Digraph()
+    parser.visualize_options(g, rule, depth=int(depth))
+    g.render('options', view=True)
+
