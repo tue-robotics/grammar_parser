@@ -103,12 +103,14 @@ class Option:
 
     def pretty_print(self, level=0):
         # print self, level
-        tabs = level*"----"
+        tabs = level*"    "
         ret = "\n"
         ret += tabs + "Option(lsemantic='{lsem}', conjs=[".format(lsem=self.lsemantic)
         for conj in self.conjuncts:
-            ret += "\n"
-            ret += tabs + "----" + "{c},".format(c=conj)
+            #ret += "\n"
+            #ret += tabs + "    " + "{c},".format(c=conj)
+            ret += " "
+            ret += conj.pretty_print()
         ret += "])"
         return ret
 # ----------------------------------------------------------------------------------------------------
@@ -134,7 +136,8 @@ class Conjunct:
 
     def pretty_print(self, level=0):
         if self.is_variable or "$" in self.name:
-            return self.name# + str(self)
+            prefix = self.rsemantic + "="
+            return self.rsemantic + "=" + self.name# + str(self)
         else:
             return bcolors.OKGREEN + self.name + bcolors.ENDC# + str(self)
 
@@ -169,6 +172,13 @@ class Rule:
 
         return rule
 
+    def pretty_print(self, level=0):
+        tabs = (level) * '    '
+        ret = ""
+        ret += tabs + self.lname
+        for option in self.options:
+            ret += option.pretty_print(level=level+1)
+        return ret
 # ----------------------------------------------------------------------------------------------------
 
 class Tree:
