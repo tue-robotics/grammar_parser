@@ -442,13 +442,35 @@ class CFGParser:
                 graph.edge(previous_word, next_word)
                 self.visualize_options(graph, target_rule, previous_words+[next_word], depth=depth-1)
 
+class Tester(object):
+    def __init__(self, grammarfile):
+        self.parser = CFGParser.fromfile(grammarfile)
+
+    def __getattr__(self, name):
+        def give_item(item):
+            return [Option(item, [Conjunct(item)])]
+
+        return give_item
+
+    def test(self, rule, depth):
+        import graphviz
+        self.parser.set_function("id", self)
+        self.parser.set_function("type", lambda x: [Option("type", [Conjunct("type")])])
+        self.parser.set_function("number", lambda x: [Option("number", [Conjunct("number")])])
+        self.parser.set_function("property", lambda x: [Option("property", [Conjunct("property")])])
+
+        g = graphviz.Digraph()
+        self.parser.visualize_options(g, rule, depth=int(depth))
+        g.render('options', view=True)
+
 if __name__ == "__main__":
     import sys
     import graphviz
 
-    parser = CFGParser.fromfile(sys.argv[1])
+    grammarfile = sys.argv[1]
     rule = sys.argv[2]
     depth = sys.argv[3]
+    parser = CFGParser.fromfile(grammarfile)
 
     parser.set_function("id", lambda x: [Option("id", [Conjunct("id")])])
     parser.set_function("type", lambda x: [Option("type", [Conjunct("type")])])
