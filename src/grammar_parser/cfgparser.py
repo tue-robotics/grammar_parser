@@ -427,6 +427,9 @@ class CFGParser:
     def visualize_options(self, graph, target_rule, previous_words=None, depth=2):
         previous_words = [] if not previous_words else previous_words
 
+        import itertools
+        colors = itertools.cycle(["blue", "green", "red", "cyan", "magenta", "black", "purple", "orange"])
+
         if previous_words:
             previous_word = previous_words[-1]
         else:
@@ -439,7 +442,7 @@ class CFGParser:
             # print next_words
 
             for next_word in next_words:
-                graph.edge(previous_word, next_word)
+                graph.edge(previous_word, next_word, color=colors.next())
                 self.visualize_options(graph, target_rule, previous_words+[next_word], depth=depth-1)
 
 class Visualizer(object):
