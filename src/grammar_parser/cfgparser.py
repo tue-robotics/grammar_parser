@@ -459,7 +459,7 @@ class Visualizer(object):
         self.parser.set_function("number", lambda x: [Option("number", [Conjunct("number")])])
         self.parser.set_function("property", lambda x: [Option("property", [Conjunct("property")])])
 
-        g = graphviz.Digraph()
+        g = graphviz.Digraph(strict=True)
         self.parser.visualize_options(g, rule, depth=int(depth))
         g.render('options', view=True)
 
