@@ -442,7 +442,7 @@ class CFGParser:
                 graph.edge(previous_word, next_word)
                 self.visualize_options(graph, target_rule, previous_words+[next_word], depth=depth-1)
 
-class Tester(object):
+class Visualizer(object):
     def __init__(self, grammarfile):
         self.parser = CFGParser.fromfile(grammarfile)
 
@@ -470,7 +470,7 @@ if __name__ == "__main__":
     rule = sys.argv[2]
     depth = int(sys.argv[3])
 
-    tester = Tester(grammar_file)
+    tester = Visualizer(grammar_file)
     tester.test(rule, depth=depth)
 
 
