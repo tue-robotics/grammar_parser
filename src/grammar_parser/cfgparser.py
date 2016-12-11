@@ -450,11 +450,11 @@ class Tester(object):
         def give_item(item):
             return [Option(item, [Conjunct(item)])]
 
-        return give_item
+        return lambda x: [Option("id", [Conjunct("id")])]
 
     def test(self, rule, depth):
         import graphviz
-        self.parser.set_function("id", self)
+        self.parser.set_function("id", lambda x: [Option("id", [Conjunct("id")])])
         self.parser.set_function("type", lambda x: [Option("type", [Conjunct("type")])])
         self.parser.set_function("number", lambda x: [Option("number", [Conjunct("number")])])
         self.parser.set_function("property", lambda x: [Option("property", [Conjunct("property")])])
@@ -465,20 +465,12 @@ class Tester(object):
 
 if __name__ == "__main__":
     import sys
-    import graphviz
 
-    grammarfile = sys.argv[1]
+    grammar_file = sys.argv[1]
     rule = sys.argv[2]
-    depth = sys.argv[3]
-    parser = CFGParser.fromfile(grammarfile)
+    depth = int(sys.argv[3])
 
-    parser.set_function("id", lambda x: [Option("id", [Conjunct("id")])])
-    parser.set_function("type", lambda x: [Option("type", [Conjunct("type")])])
-    parser.set_function("number", lambda x: [Option("number", [Conjunct("number")])])
-    parser.set_function("property", lambda x: [Option("property", [Conjunct("property")])])
+    tester = Tester(grammar_file)
+    tester.test(rule, depth=depth)
 
-
-    g = graphviz.Digraph()
-    parser.visualize_options(g, rule, depth=int(depth))
-    g.render('options', view=True)
 
