@@ -397,9 +397,9 @@ class CFGParser:
 
         elif conj.name[0] == "$":
             func_name = conj.name[1:]
-            if not func_name in self.functions:
+            if not self.has_completion_function(func_name):
                 return False
-            options = self.functions[func_name](words)
+            options = self.get_completion_function(func_name)(words)
 
         else:
             if words == []:
@@ -415,6 +415,12 @@ class CFGParser:
             next_words += self._next_word((subtree, 0), words)
 
         return next_words
+
+    def has_completion_function(self, func_name):
+        return func_name in self.functions
+
+    def get_completion_function(self, func_name):
+        return self.functions[func_name]
 
     def graphviz_id(self):
         return "CFGParser"
@@ -445,22 +451,18 @@ class CFGParser:
                 graph.edge(previous_word, next_word, color=colors.next())
                 self.visualize_options(graph, target_rule, previous_words+[next_word], depth=depth-1)
 
+
 class Visualizer(object):
     def __init__(self, grammarfile):
         self.parser = CFGParser.fromfile(grammarfile)
 
-    def __getattr__(self, name):
-        def give_item(item):
-            return [Option(item, [Conjunct(item)])]
-
-        return lambda x: [Option("id", [Conjunct("id")])]
+    def get_completion_function(self, name):
+        return lambda x: [Option(name, [Conjunct(name.upper())])]
 
     def test(self, rule, depth):
         import graphviz
-        self.parser.set_function("id", lambda x: [Option("id", [Conjunct("id")])])
-        self.parser.set_function("type", lambda x: [Option("type", [Conjunct("type")])])
-        self.parser.set_function("number", lambda x: [Option("number", [Conjunct("number")])])
-        self.parser.set_function("property", lambda x: [Option("property", [Conjunct("property")])])
+        self.parser.has_completion_function = lambda func_name: True
+        self.parser.get_completion_function = self.get_completion_function
 
         g = graphviz.Digraph(strict=True)
         self.parser.visualize_options(g, rule, depth=int(depth))
