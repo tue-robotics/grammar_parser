@@ -103,14 +103,24 @@ class Option:
 
     def pretty_print(self, level=0):
         # print self, level
-        tabs = level*"----"
+        tabs = level*"    "
         ret = "\n"
         ret += tabs + "Option(lsemantic='{lsem}', conjs=[".format(lsem=self.lsemantic)
         for conj in self.conjuncts:
-            ret += "\n"
-            ret += tabs + "----" + "{c},".format(c=conj)
+            #ret += "\n"
+            #ret += tabs + "    " + "{c},".format(c=conj)
+            ret += " "
+            ret += conj.pretty_print()
         ret += "])"
         return ret
+
+    def graphviz_id(self):
+        return "Option '{lsem}'".format(lsem=self.lsemantic).replace('"', '').replace(":","")
+
+    def to_graphviz(self, graph):
+        for conj in self.conjuncts:
+            graph.edge(self.graphviz_id(), conj.graphviz_id())
+            conj.to_graphviz(graph)
 # ----------------------------------------------------------------------------------------------------
 
 class Conjunct:
@@ -134,9 +144,16 @@ class Conjunct:
 
     def pretty_print(self, level=0):
         if self.is_variable or "$" in self.name:
-            return self.name# + str(self)
+            prefix = self.rsemantic + "="
+            return self.rsemantic + "=" + self.name# + str(self)
         else:
             return bcolors.OKGREEN + self.name + bcolors.ENDC# + str(self)
+
+    def graphviz_id(self):
+        return "Conjunct {name}".format(name=self.name)
+
+    def to_graphviz(self, graph):
+        graph.node(self.graphviz_id())
 
 # ----------------------------------------------------------------------------------------------------
 
@@ -169,6 +186,21 @@ class Rule:
 
         return rule
 
+    def pretty_print(self, level=0):
+        tabs = (level) * '    '
+        ret = ""
+        ret += tabs + self.lname
+        for option in self.options:
+            ret += option.pretty_print(level=level+1)
+        return ret
+
+    def graphviz_id(self):
+        return "Rule {lname}".format(lname=self.lname)
+
+    def to_graphviz(self, graph):
+        for opt in self.options:
+            graph.edge(self.graphviz_id(), opt.graphviz_id())
+            opt.to_graphviz(graph)
 # ----------------------------------------------------------------------------------------------------
 
 class Tree:
@@ -365,9 +397,9 @@ class CFGParser:
 
         elif conj.name[0] == "$":
             func_name = conj.name[1:]
-            if not func_name in self.functions:
+            if not self.has_completion_function(func_name):
                 return False
-            options = self.functions[func_name](words)
+            options = self.get_completion_function(func_name)(words)
 
         else:
             if words == []:
@@ -383,3 +415,67 @@ class CFGParser:
             next_words += self._next_word((subtree, 0), words)
 
         return next_words
+
+    def has_completion_function(self, func_name):
+        return func_name in self.functions
+
+    def get_completion_function(self, func_name):
+        return self.functions[func_name]
+
+    def graphviz_id(self):
+        return "CFGParser"
+
+    def to_graphviz(self, graph):
+        for name, rule in self.rules.iteritems():
+            graph.edge(self.graphviz_id(), rule.graphviz_id())
+            rule.to_graphviz(graph)
+
+    def visualize_options(self, graph, target_rule, previous_words=None, depth=2):
+        previous_words = [] if not previous_words else previous_words
+
+        import itertools
+        colors = itertools.cycle(["blue", "green", "red", "cyan", "magenta", "black", "purple", "orange"])
+
+        if previous_words:
+            previous_word = previous_words[-1]
+        else:
+            previous_word = target_rule
+
+        graph.node(previous_word)
+        next_words = set(self.next_word(target_rule, previous_words))
+
+        if next_words and depth:
+            # print next_words
+
+            for next_word in next_words:
+                graph.edge(previous_word, next_word, color=colors.next())
+                self.visualize_options(graph, target_rule, previous_words+[next_word], depth=depth-1)
+
+
+class Visualizer(object):
+    def __init__(self, grammarfile):
+        self.parser = CFGParser.fromfile(grammarfile)
+
+    def get_completion_function(self, name):
+        return lambda x: [Option(name, [Conjunct(name.upper())])]
+
+    def test(self, rule, depth):
+        import graphviz
+        self.parser.has_completion_function = lambda func_name: True
+        self.parser.get_completion_function = self.get_completion_function
+
+        g = graphviz.Digraph(strict=True)
+        self.parser.visualize_options(g, rule, depth=int(depth))
+        g.render('options', view=True)
+
+if __name__ == "__main__":
+    import sys
+
+    grammar_file = sys.argv[1]
+    rule = sys.argv[2]
+    depth = int(sys.argv[3])
+
+    tester = Visualizer(grammar_file)
+    tester.test(rule, depth=depth)
+
+
