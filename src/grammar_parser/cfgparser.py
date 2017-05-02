@@ -51,6 +51,8 @@ The semantics are returned to whomever called CFGParser.parse(...), usually the 
 The REPL sends the semantics to the action_server, which grounds the semantics by implementing the actions.
 """
 
+import random, re, yaml
+
 class bcolors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -287,6 +289,16 @@ class CFGParser:
                 parser.add_rule(line)
         return parser
 
+    @staticmethod
+    def fromstring(string):
+        parser = CFGParser()
+        for line in string.replace(";", "\n").split("\n"):
+            line = line.strip()
+            if line == "" or line[0] == '#':
+                continue
+            parser.add_rule(line)
+        return parser
+
     def add_rule(self, s):
         rule = Rule.from_cfg_def(s)
 
@@ -450,6 +462,51 @@ class CFGParser:
             for next_word in next_words:
                 graph.edge(previous_word, next_word, color=colors.next())
                 self.visualize_options(graph, target_rule, previous_words+[next_word], depth=depth-1)
+
+    def get_unwrapped(self, lname):
+        if lname not in self.rules:
+            return ""
+
+        rule = self.rules[lname]
+
+        opt_strings = []
+        for opt in rule.options:
+            conj_strings = []
+
+            for conj in opt.conjuncts:
+
+                if conj.is_variable:
+                    unwrapped_string = self.get_unwrapped(conj.name)
+                    if unwrapped_string:
+                        conj_strings.append(unwrapped_string)
+                else:
+                    conj_strings.append(conj.name)
+
+            opt_strings.append(" ".join(conj_strings))
+
+        s = "|".join(opt_strings)
+
+        if len(opt_strings) > 1:
+            s = "(" + s + ")"
+
+        return s
+
+    def random(self, lname):
+        unwrapped = self.get_unwrapped(lname)
+
+        spec = "(%s)" % unwrapped
+        while re.search('\([^)]+\)', spec):
+            options = re.findall('\([^()]+\)', spec)
+            for option in options:
+                spec = spec.replace(option, random.choice(option[1:-1].split("|")), 1)
+
+        random_sentence = spec
+
+        semantics_str = self.parse(lname, random_sentence.split(" "))
+        semantics_str = semantics_str.replace("<", "[")
+        semantics_str = semantics_str.replace(">", "]")
+
+        return random_sentence, yaml.load(semantics_str)
 
 
 class Visualizer(object):
