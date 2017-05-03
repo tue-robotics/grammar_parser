@@ -52,8 +52,7 @@ The REPL sends the semantics to the action_server, which grounds the semantics b
 """
 
 import random, re, yaml
-from yaml.scanner import ScannerError
-from yaml.parser import ParserError
+from yaml import MarkedYAMLError
 
 class bcolors:
     HEADER = '\033[95m'
@@ -299,9 +298,9 @@ class CFGParser:
 
     def verify(self, target=None):
         if target is None:
-            # Try whether all rule in the grammar are valid
-            for rule in self.rules:
-                self.get_unwrapped(rule)
+            # Try whether all rules in the grammar are valid
+            for r in self.rules:
+                self.get_unwrapped(r)
         else:
             self.get_unwrapped(target)
         return True
@@ -350,10 +349,10 @@ class CFGParser:
                 if debug:
                     print T.pretty_print()
                 # Simply take the first tree that successfully parses
-                semantics_str = self.get_semantics(T)
+                semantics_str = self.get_semantics(T).replace("<", "[").replace(">", "]")
                 try:
-                    semantics = yaml.safe_load(semantics_str.replace("<", "[").replace(">", "]"))
-                except (ScannerError, ParserError) as e:
+                    semantics = yaml.safe_load(semantics_str)
+                except MarkedYAMLError as e:
                     raise Exception("Failed to parse semantics", semantics_str, e)
                 return semantics
 
