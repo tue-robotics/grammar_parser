@@ -52,6 +52,8 @@ The REPL sends the semantics to the action_server, which grounds the semantics b
 """
 
 import random, re, yaml
+from yaml.scanner import ScannerError
+from yaml.parser import ParserError
 
 class bcolors:
     HEADER = '\033[95m'
@@ -178,7 +180,7 @@ class Rule:
     def from_cfg_def(s):
         tmp = s.split(" -> ")
         if len(tmp) != 2:
-            raise Exception
+            raise Exception("Invalid grammar, please use proper ' -> ' arrows", tmp)
 
         (lname, lsem, outstr) = parse_next_atom(tmp[0].strip())
 
@@ -280,14 +282,9 @@ class CFGParser:
 
     @staticmethod
     def fromfile(filename):
-        parser = CFGParser()
         with open(filename) as f:
-            for line in f:
-                line = line.strip()
-                if line == "" or line[0] == '#':
-                    continue
-                parser.add_rule(line)
-        return parser
+            string = f.read()
+        return CFGParser.fromstring(string)
 
     @staticmethod
     def fromstring(string):
@@ -297,7 +294,17 @@ class CFGParser:
             if line == "" or line[0] == '#':
                 continue
             parser.add_rule(line)
+
         return parser
+
+    def verify(self, target=None):
+        if target is None:
+            # Try whether all rule in the grammar are valid
+            for rule in self.rules:
+                self.get_unwrapped(rule)
+        else:
+            self.get_unwrapped(target)
+        return True
 
     def add_rule(self, s):
         rule = Rule.from_cfg_def(s)
@@ -329,18 +336,26 @@ class CFGParser:
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     def parse(self, target, words, debug=False):
+        if isinstance(words, str):
+            words = words.split(" ")
+
         if not target in self.rules:
-            return False
+            raise Exception("Target {} not present in grammar rules".format(target))
 
         rule = self.rules[target]
 
         for opt in rule.options:
             T = Tree(opt)
-            if self._parse((T, 0), words) != False:
+            if self._parse((T, 0), words):
                 if debug:
                     print T.pretty_print()
                 # Simply take the first tree that successfully parses
-                return self.get_semantics(T)
+                semantics_str = self.get_semantics(T)
+                try:
+                    semantics = yaml.safe_load(semantics_str.replace("<", "[").replace(">", "]"))
+                except (ScannerError, ParserError) as e:
+                    raise Exception("Failed to parse semantics", semantics_str, e)
+                return semantics
 
         return False
 
@@ -465,7 +480,7 @@ class CFGParser:
 
     def get_unwrapped(self, lname):
         if lname not in self.rules:
-            return ""
+            raise Exception("Target {} not present in grammar rules".format(lname))
 
         rule = self.rules[lname]
 
@@ -491,7 +506,7 @@ class CFGParser:
 
         return s
 
-    def random(self, lname):
+    def get_random_sentence(self, lname):
         unwrapped = self.get_unwrapped(lname)
 
         spec = "(%s)" % unwrapped
@@ -500,13 +515,7 @@ class CFGParser:
             for option in options:
                 spec = spec.replace(option, random.choice(option[1:-1].split("|")), 1)
 
-        random_sentence = spec
-
-        semantics_str = self.parse(lname, random_sentence.split(" "))
-        semantics_str = semantics_str.replace("<", "[")
-        semantics_str = semantics_str.replace(">", "]")
-
-        return random_sentence, yaml.load(semantics_str)
+        return spec
 
 
 class Visualizer(object):
