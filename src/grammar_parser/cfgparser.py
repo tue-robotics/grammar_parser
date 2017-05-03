@@ -336,7 +336,7 @@ class CFGParser:
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     def parse(self, target, words, debug=False):
-        if isinstance(words, str):
+        if isinstance(words, basestring):
             words = words.split(" ")
 
         if not target in self.rules:
