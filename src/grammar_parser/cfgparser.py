@@ -369,10 +369,8 @@ class CFGParser:
                     print T.pretty_print()
                 # Simply take the first tree that successfully parses
                 semantics_str = self.get_semantics(T).replace("<", "[").replace(">", "]")
-                try:
-                    semantics = yaml.safe_load(semantics_str)
-                except MarkedYAMLError as e:
-                    raise Exception("Failed to parse semantics", semantics_str, e)
+                semantics = yaml.safe_load(semantics_str)
+                # just let the yaml error bubble up, the will give a nice backtrace
                 return semantics
 
         return False
