@@ -294,26 +294,75 @@ def parse_next_atom(s):
 
 
 class CFGParser:
+    """
+    Parser for parsing the heard sentence, and converting it to information for
+    the action that should be performed.
+
+    Usage:
+    - For loading a grammar from a file use fromfile().
+    - For loading a grammar from a text string use fromstring().
+
+    - For loading a grammar with functions, construct a CFGParser object, add
+      the functions using CFGParser.set_function(), and finally load the
+      grammar using fromfile or fromstring, passing in the CFGParser object
+      as well.
+
+    The parser performs a few basic checks on the grammar, such as missing
+    sub-rules and missing functions while loading. The CFGParser.verify function
+    goes a step further by expanding all alternatives.
+
+    To parse a sentence, use CFGParser.parse()
+    """
     def __init__(self):
         self.rules = {}
         self.functions = {}
 
     @staticmethod
-    def fromfile(filename):
+    def fromfile(filename, parser=None):
+        """
+        Load the grammar from the provided file.
+
+        :param filename: Path to the text file containing the grammar
+        :param parser: If not None, the parser to use (else a new parser is created).
+        :return: The parser containing the grammar.
+        """
         with open(filename) as f:
             string = f.read()
-        return CFGParser.fromstring(string)
+        return CFGParser.fromstring(string, parser)
 
     @staticmethod
-    def fromstring(string):
-        parser = CFGParser()
+    def fromstring(string, parser=None):
+        """
+        Load the grammar from the provided text.
+
+        :param string: Text containing the grammar
+        :param parser: If not None, the parser to use (else a new parser is created).
+        :return: The parser containing the grammar.
+        """
+        if parser is None:
+            parser = CFGParser()
+
         for line in string.replace(";", "\n").split("\n"):
             line = line.strip()
             if line == "" or line[0] == '#':
                 continue
             parser.add_rule(line)
 
+        parser.check_rules()
         return parser
+
+    def check_rules(self):
+        """
+        Verify completeness of the loaded grammar, no rules that refer to missing
+        sub-rules and no functions that don't exist.
+        """
+        for rule in self.rules.itervalues():
+            for option in rule.options:
+                for conj in option.conjuncts:
+                    if conj.is_variable:
+                        assert conj.name in self.rules, "Rule '{}' is missing".format(conj.name)
+                    if conj.name[0] == '$':
+                        assert conj.name[1:] in self.functions, "Function '{}' is missing".format(conj.name[1:])
 
     def verify(self, target=None):
         if target is None:
@@ -335,6 +384,11 @@ class CFGParser:
             self.rules[rule.lname] = rule
 
     def set_function(self, name, func):
+        """
+        Add a new function to the parser. Must be done before loading the grammar.
+
+        Todo: Ensure the function expansion result does not refer to missing sub-rules or functions.
+        """
         self.functions[name] = func
 
     def get_semantics(self, tree):
