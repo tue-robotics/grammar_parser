@@ -388,23 +388,26 @@ class CFGParser:
         if not T:
             return words == []
 
-        if not words:
-            return False
-
         conj = T.option.conjuncts[idx]
 
         if conj.is_variable:
+            # Conjunct is a sub-rule.
             if not conj.name in self.rules:
                 return False
             options = self.rules[conj.name].options
 
         elif conj.name[0] == "$":
+            # Conjunct is a function that must be expanded to a sub-rule.
             func_name = conj.name[1:]
             if not func_name in self.functions:
                 return False
             options = self.functions[func_name](words)
 
         else:
+            # Conjunct is an actual word.
+            if not words:
+                return False
+
             if conj.name == words[0]:
                 return self._parse(T.next(idx), words[1:])
             else:
