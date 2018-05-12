@@ -56,6 +56,12 @@ import re
 import yaml
 from yaml import MarkedYAMLError
 
+class GrammarError(Exception):
+    """
+    Exception indicating a problem in the grammar rules
+    """
+    def __init__(self, message):
+        Exception.__init__(self, message)
 
 class bcolors:
     HEADER = '\033[95m'
@@ -445,17 +451,25 @@ class CFGParser:
         conj = T.option.conjuncts[idx]
 
         if conj.is_variable:
-            # Conjunct is a sub-rule.
-            if not conj.name in self.rules:
-                return False
+            # Conjunct is a sub-rule, 'check_rules' ensures a sub-rule exists,
+            # but functions may introduce new sub-rule calls.
+            if conj.name not in self.rules:
+                raise GrammarError("Rule '{}' does not exist".format(conj.name))
+
             options = self.rules[conj.name].options
 
         elif conj.name[0] == "$":
-            # Conjunct is a function that must be expanded to a sub-rule.
+            # Conjunct is a function that must be expanded.
             func_name = conj.name[1:]
+
+            # 'check_rules' ensures the function exists, but a previous
+            # $function expansion may be wrong.
             if not func_name in self.functions:
-                return False
+                raise GrammarError("Function '{}' does not exist".format(func_name))
+
             options = self.functions[func_name](words)
+            # XXX Expanded result should not refer to missing sub-rules or
+            # functions. However, any check at this time is too late.
 
         else:
             # Conjunct is an actual word.
