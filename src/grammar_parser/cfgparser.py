@@ -58,10 +58,21 @@ from yaml import MarkedYAMLError
 
 class GrammarError(Exception):
     """
-    Exception indicating a problem in the grammar rules
+    Exception indicating a problem in the grammar rules.
     """
     def __init__(self, message):
         Exception.__init__(self, message)
+
+class ParseError(Exception):
+    """
+    Exception indicating that the given sentence does not match on the grammar.
+    """
+    def __init__(self, words, word_index):
+        if word_index < 0 or word_index >= len(words):
+            msg = "Word index {} is missing (sentence has {} words)".format(word_index, len(words))
+        else:
+            msg = "Word '{}' at index {} failed to match".format(words[word_index], word_index)
+        Exception.__init__(self, msg)
 
 class bcolors:
     HEADER = '\033[95m'
@@ -422,9 +433,11 @@ class CFGParser:
 
         rule = self.rules[target]
 
+        best_fail = None
         for opt in rule.options:
             T = Tree(opt)
-            if self._parse((T, 0), words):
+            ret = self._parse((T, 0), words, 0)
+            if ret is None:
                 if debug:
                     print T.pretty_print()
                 # Simply take the first tree that successfully parses
@@ -433,21 +446,34 @@ class CFGParser:
                 # just let the yaml error bubble up, the will give a nice backtrace
                 return semantics
 
-        return False
+            elif best_fail is None or best_fail < ret:
+                best_fail = ret
 
-    def _parse(self, TIdx, words):
+        assert best_fail is not None
+        raise ParseError(words, best_fail)
+
+    def _parse(self, TIdx, words, word_index):
         """
         Try to match the provided words on the given grammar rule option.
 
         :param TIdx: Tuple of grammar Rule, and rule alternative index.
         :param words: Words to match on the alternative.
-        :return: Whether the words could be matched on the alternative.
+        :param word_index: First word in words to match on the alternative.
+        :return: On successful match None is returned, else an index in words
+                 pointing at the position that failed to match. Note that the
+                 index may be equal to the number of words (indicating that
+                 words are missing).
         """
         (T, idx) = TIdx
 
         if not T:
-            return words == []
+            # We ran out of grammar.
+            if len(words) == word_index:
+                # And out of words at the same time, hooray!
+                return None
+            return word_index
 
+        # At least one grammar symbol exists.
         conj = T.option.conjuncts[idx]
 
         if conj.is_variable:
@@ -467,27 +493,32 @@ class CFGParser:
             if not func_name in self.functions:
                 raise GrammarError("Function '{}' does not exist".format(func_name))
 
-            options = self.functions[func_name](words)
+            options = self.functions[func_name](words[word_index:])
             # XXX Expanded result should not refer to missing sub-rules or
             # functions. However, any check at this time is too late.
 
         else:
             # Conjunct is an actual word.
-            if not words:
-                return False
+            if word_index >= len(words):
+                # Ran out of words but not out of grammar terminals.
+                return word_index
 
-            if conj.name == words[0]:
-                return self._parse(T.next(idx), words[1:])
+            if conj.name == words[word_index]:
+                return self._parse(T.next(idx), words, word_index + 1)
             else:
-                return False
+                return word_index
 
+        best_fail = None
         for opt in options:
             subtree = T.add_subtree(idx, Tree(opt))
-            ret = self._parse((subtree, 0), words)
-            if ret:
-                return ret
+            ret = self._parse((subtree, 0), words, word_index)
+            if ret is None:
+                return None
+            if best_fail is None or best_fail < ret:
+                best_fail = ret
 
-        return False
+        assert best_fail is not None
+        return best_fail
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
