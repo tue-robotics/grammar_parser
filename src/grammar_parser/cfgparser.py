@@ -376,6 +376,13 @@ class CFGParser:
         return False
 
     def _parse(self, TIdx, words):
+        """
+        Try to match the provided words on the given grammar rule option.
+
+        :param TIdx: Tuple of grammar Rule, and rule alternative index.
+        :param words: Words to match on the alternative.
+        :return: Whether the words could be matched on the alternative.
+        """
         (T, idx) = TIdx
 
         if not T:
