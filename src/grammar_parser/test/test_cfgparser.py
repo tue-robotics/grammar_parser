@@ -114,3 +114,134 @@ class TestParseNextAtom(unittest.TestCase):
         self.assertEqual(remaining, '')
 
 
+def normalize_string(text):
+    """
+    Normalize a multi-line string.
+
+    :param text: Multi-line text string.
+    :type  text: str
+
+    :return: Text string containing normalized lines.
+    :rtype:  str
+
+    Normalized lines means:
+    - Lines have been shifted to the left margin as far as possible.
+    - Lines have no trailing whitespace.
+    - Text has no leading or trailing empty lines.
+    """
+    lead_white_pat = re.compile('^( +)[^ ]')
+    lines = [line.rstrip() for line in text.split('\n')]
+
+    # Find trailing empty lines.
+    last = len(lines) - 1
+    while last >= 0 and lines[last] == '':
+        last = last - 1
+    if last < 0:
+        return ""
+
+    # Find leading empty lines.
+    first = 0
+    while lines[first] == '':
+        first = first + 1
+
+    lines = lines[first:last + 1]
+
+    # Strip common whitespace.
+    common_length = None
+    for line in lines:
+        m = lead_white_pat.match(line)
+        if m:
+            lead_length = len(m.group(1))
+            if common_length is None or lead_length < common_length:
+                common_length = lead_length
+
+    if common_length > 0:
+        for i, line in enumerate(lines):
+            if line != '':
+                lines[i] = line[common_length:]
+
+    return "\n".join(lines)
+
+
+
+class TestSingleRule(unittest.TestCase):
+    def setUp(self):
+        grammar = normalize_string("""
+            T[{"key":"value"}] -> a b c
+        """)
+
+        self.target_rule = 'T'
+        self.p = CFGParser.fromstring(grammar)
+
+    def test_single1(self):
+        self.assertEquals(self.p.parse(self.target_rule, ''), False)
+
+    def test_single2(self):
+        self.assertEquals(self.p.parse(self.target_rule, 'a'), False)
+
+    def test_single3(self):
+        self.assertEquals(self.p.parse(self.target_rule, 'b'), False)
+
+    def test_single4(self):
+        self.assertEquals(self.p.parse(self.target_rule, 'q'), False)
+
+    def test_single5(self):
+        self.assertEquals(self.p.parse(self.target_rule, 'a b'), False)
+
+    def test_single6(self):
+        self.assertEquals(self.p.parse(self.target_rule, 'a b c d'), False)
+
+    def test_single7(self):
+        self.assertEquals(self.p.parse(self.target_rule, 'a b c'), {'key': 'value'})
+
+class TestSubrules(unittest.TestCase):
+    def setUp(self):
+        grammar = normalize_string("""
+            T[X] -> A[X] | B[X]
+            A["a"] -> p
+            B["b"] -> q
+        """)
+
+        self.target_rule = 'T'
+        self.p = CFGParser.fromstring(grammar)
+
+    def test_sub1(self):
+        self.assertEquals(self.p.parse(self.target_rule, 'p'), 'a')
+
+    def test_sub2(self):
+        self.assertEquals(self.p.parse(self.target_rule, 'q'), 'b')
+
+
+class TestEmptySubrules(unittest.TestCase):
+    def setUp(self):
+        grammar = normalize_string("""
+            T[X] -> A[X] | B[X]
+            A["a"] -> p D
+            B["b"] -> q E
+            D -> | r
+            E -> r |
+        """)
+
+        self.target_rule = 'T'
+        self.p = CFGParser.fromstring(grammar)
+
+    def test_empty_subrule1(self):
+        # XXX False negative, should reduce to 'a' with D being the empty option.
+        self.assertEquals(self.p.parse(self.target_rule, 'p'), False)
+
+    def test_empty_subrule2(self):
+        # XXX False negative, should reduce to 'b' with E being the empty option.
+        self.assertEquals(self.p.parse(self.target_rule, 'q'), False)
+
+    def test_empty_subrule3(self):
+        # XXX Crashes the parser.
+        with self.assertRaises(IndexError):
+            self.assertEquals(self.p.parse(self.target_rule, 'p r'), 'a')
+
+    def test_empty_subrule4(self):
+        self.assertEquals(self.p.parse(self.target_rule, 'q r'), 'b')
+
+    def test_empty_subrule5(self):
+        # XXX Crashes the parser.
+        with self.assertRaises(IndexError):
+            self.assertEquals(self.p.parse(self.target_rule, 'q x'), False)
