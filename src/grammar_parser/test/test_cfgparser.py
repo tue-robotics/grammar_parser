@@ -174,22 +174,28 @@ class TestSingleRule(unittest.TestCase):
         self.p = CFGParser.fromstring(grammar)
 
     def test_single1(self):
-        self.assertEquals(self.p.parse(self.target_rule, ''), False)
+        with self.assertRaises(ParseError):
+            self.p.parse(self.target_rule, '') # Missing first token 'a'.
 
     def test_single2(self):
-        self.assertEquals(self.p.parse(self.target_rule, 'a'), False)
+        with self.assertRaises(ParseError):
+            self.p.parse(self.target_rule, 'a') # Missing second token 'b'.
 
     def test_single3(self):
-        self.assertEquals(self.p.parse(self.target_rule, 'b'), False)
+        with self.assertRaises(ParseError):
+            self.p.parse(self.target_rule, 'b') # Incorrect first token.
 
     def test_single4(self):
-        self.assertEquals(self.p.parse(self.target_rule, 'q'), False)
+        with self.assertRaises(ParseError):
+            self.p.parse(self.target_rule, 'q') # Incorrect first token.
 
     def test_single5(self):
-        self.assertEquals(self.p.parse(self.target_rule, 'a b'), False)
+        with self.assertRaises(ParseError):
+            self.p.parse(self.target_rule, 'a b') # Missing third token.
 
     def test_single6(self):
-        self.assertEquals(self.p.parse(self.target_rule, 'a b c d'), False)
+        with self.assertRaises(ParseError):
+            self.p.parse(self.target_rule, 'a b c d') # Too many words.
 
     def test_single7(self):
         self.assertEquals(self.p.parse(self.target_rule, 'a b c'), {'key': 'value'})
@@ -226,22 +232,17 @@ class TestEmptySubrules(unittest.TestCase):
         self.p = CFGParser.fromstring(grammar)
 
     def test_empty_subrule1(self):
-        # XXX False negative, should reduce to 'a' with D being the empty option.
-        self.assertEquals(self.p.parse(self.target_rule, 'p'), False)
+        self.assertEquals(self.p.parse(self.target_rule, 'p'), 'a') # D reduces to empty.
 
     def test_empty_subrule2(self):
-        # XXX False negative, should reduce to 'b' with E being the empty option.
-        self.assertEquals(self.p.parse(self.target_rule, 'q'), False)
+        self.assertEquals(self.p.parse(self.target_rule, 'q'), 'b') # E reduces to empty.
 
     def test_empty_subrule3(self):
-        # XXX Crashes the parser.
-        with self.assertRaises(IndexError):
-            self.assertEquals(self.p.parse(self.target_rule, 'p r'), 'a')
+        self.assertEquals(self.p.parse(self.target_rule, 'p r'), 'a')
 
     def test_empty_subrule4(self):
         self.assertEquals(self.p.parse(self.target_rule, 'q r'), 'b')
 
     def test_empty_subrule5(self):
-        # XXX Crashes the parser.
-        with self.assertRaises(IndexError):
-            self.assertEquals(self.p.parse(self.target_rule, 'q x'), False)
+        with self.assertRaises(ParseError):
+            self.p.parse(self.target_rule, 'q x') # Incorrect second token.
