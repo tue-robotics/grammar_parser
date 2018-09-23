@@ -473,6 +473,9 @@ class CFGParser:
                 return None
             return word_index
 
+        if  len(T.option.conjuncts) == idx:
+            return self._parse(T.next(idx), words, word_index)
+
         # At least one grammar symbol exists.
         conj = T.option.conjuncts[idx]
 
