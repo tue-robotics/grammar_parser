@@ -328,7 +328,8 @@ class CFGParser:
     sub-rules and missing functions while loading. The CFGParser.verify function
     goes a step further by expanding all alternatives.
 
-    To parse a sentence, use CFGParser.parse()
+    To parse a sentence, use parse_raw() at a CFGParser instance to get maximum information, or
+    use parse() at a CFGParser instance to avoid getting exceptions.
     """
     def __init__(self):
         self.rules = {}
@@ -425,6 +426,58 @@ class CFGParser:
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     def parse(self, target, words, debug=False):
+        """
+        Parse the given sentence against the grammar loaded in the class. This
+        method hides all errors (and returns False in that case). Use the
+        self.parse_raw function if the difference between a successful and
+        failed parse is relevant.
+
+        :param target: Target rule in the grammar to start parsing the sentence.
+        :type target: str.
+
+        :param words: Sentence to parse, either as a single string or a list of words.
+        :type words: str, or a list of str.
+
+        :param debug: If True, output the matched sequence in the tree.
+        :type debug: Boolean, by default False.
+
+        :return: The captured data value collected during parsing if parsing
+                 succeeds, else False.
+        """
+        try:
+            return self.parse_raw(target, words, debug)
+
+        except GrammarError as ex:
+            print "grammar_parser, Grammar error: {}".format(ex)
+            return False
+
+        except ParseError as ex:
+            print "grammar_parser, Parse error: {}".format(ex)
+            return False
+
+        return False
+
+
+    def parse_raw(self, target, words, debug=False):
+        """
+        Parse the given sentence against the grammar loaded in the class. This
+        method throws exceptions on failures, the self.parse function returns
+        False in such a case.
+
+        :param target: Target rule in the grammar to start parsing the sentence.
+        :type target: str.
+
+        :param words: Sentence to parse, either as a single string or a list of words.
+        :type words: str, or a list of str.
+
+        :param debug: If True, output the matched sequence in the tree.
+        :type debug: Boolean, by default False.
+
+        :return: The captured data value collected during parsing if parsing
+                 succeeds, a GrammarError exception if the grammar is found to
+                 be incorrect, or a ParseError exception if the sentence fails
+                 to match the grammar.
+        """
         if isinstance(words, basestring):
             words = words.split(" ")
 

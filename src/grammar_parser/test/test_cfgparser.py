@@ -175,30 +175,30 @@ class TestSingleRule(unittest.TestCase):
 
     def test_single1(self):
         with self.assertRaises(ParseError):
-            self.p.parse(self.target_rule, '') # Missing first token 'a'.
+            self.p.parse_raw(self.target_rule, '') # Missing first token 'a'.
 
     def test_single2(self):
         with self.assertRaises(ParseError):
-            self.p.parse(self.target_rule, 'a') # Missing second token 'b'.
+            self.p.parse_raw(self.target_rule, 'a') # Missing second token 'b'.
 
     def test_single3(self):
         with self.assertRaises(ParseError):
-            self.p.parse(self.target_rule, 'b') # Incorrect first token.
+            self.p.parse_raw(self.target_rule, 'b') # Incorrect first token.
 
     def test_single4(self):
         with self.assertRaises(ParseError):
-            self.p.parse(self.target_rule, 'q') # Incorrect first token.
+            self.p.parse_raw(self.target_rule, 'q') # Incorrect first token.
 
     def test_single5(self):
         with self.assertRaises(ParseError):
-            self.p.parse(self.target_rule, 'a b') # Missing third token.
+            self.p.parse_raw(self.target_rule, 'a b') # Missing third token.
 
     def test_single6(self):
         with self.assertRaises(ParseError):
-            self.p.parse(self.target_rule, 'a b c d') # Too many words.
+            self.p.parse_raw(self.target_rule, 'a b c d') # Too many words.
 
     def test_single7(self):
-        self.assertEquals(self.p.parse(self.target_rule, 'a b c'), {'key': 'value'})
+        self.assertEquals(self.p.parse_raw(self.target_rule, 'a b c'), {'key': 'value'})
 
 class TestSubrules(unittest.TestCase):
     def setUp(self):
@@ -212,10 +212,10 @@ class TestSubrules(unittest.TestCase):
         self.p = CFGParser.fromstring(grammar)
 
     def test_sub1(self):
-        self.assertEquals(self.p.parse(self.target_rule, 'p'), 'a')
+        self.assertEquals(self.p.parse_raw(self.target_rule, 'p'), 'a')
 
     def test_sub2(self):
-        self.assertEquals(self.p.parse(self.target_rule, 'q'), 'b')
+        self.assertEquals(self.p.parse_raw(self.target_rule, 'q'), 'b')
 
 
 class TestEmptySubrules(unittest.TestCase):
@@ -232,17 +232,17 @@ class TestEmptySubrules(unittest.TestCase):
         self.p = CFGParser.fromstring(grammar)
 
     def test_empty_subrule1(self):
-        self.assertEquals(self.p.parse(self.target_rule, 'p'), 'a') # D reduces to empty.
+        self.assertEquals(self.p.parse_raw(self.target_rule, 'p'), 'a') # D reduces to empty.
 
     def test_empty_subrule2(self):
-        self.assertEquals(self.p.parse(self.target_rule, 'q'), 'b') # E reduces to empty.
+        self.assertEquals(self.p.parse_raw(self.target_rule, 'q'), 'b') # E reduces to empty.
 
     def test_empty_subrule3(self):
-        self.assertEquals(self.p.parse(self.target_rule, 'p r'), 'a')
+        self.assertEquals(self.p.parse_raw(self.target_rule, 'p r'), 'a')
 
     def test_empty_subrule4(self):
-        self.assertEquals(self.p.parse(self.target_rule, 'q r'), 'b')
+        self.assertEquals(self.p.parse_raw(self.target_rule, 'q r'), 'b')
 
     def test_empty_subrule5(self):
         with self.assertRaises(ParseError):
-            self.p.parse(self.target_rule, 'q x') # Incorrect second token.
+            self.p.parse_raw(self.target_rule, 'q x') # Incorrect second token.
