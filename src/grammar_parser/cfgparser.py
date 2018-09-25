@@ -56,6 +56,23 @@ import re
 import yaml
 from yaml import MarkedYAMLError
 
+class GrammarError(Exception):
+    """
+    Exception indicating a problem in the grammar rules.
+    """
+    def __init__(self, message):
+        Exception.__init__(self, message)
+
+class ParseError(Exception):
+    """
+    Exception indicating that the given sentence does not match on the grammar.
+    """
+    def __init__(self, words, word_index):
+        if word_index < 0 or word_index >= len(words):
+            msg = "Word index {} is missing (sentence has {} words)".format(word_index, len(words))
+        else:
+            msg = "Word '{}' at index {} failed to match".format(words[word_index], word_index)
+        Exception.__init__(self, msg)
 
 class bcolors:
     HEADER = '\033[95m'
@@ -294,26 +311,76 @@ def parse_next_atom(s):
 
 
 class CFGParser:
+    """
+    Parser for parsing the heard sentence, and converting it to information for
+    the action that should be performed.
+
+    Usage:
+    - For loading a grammar from a file use fromfile().
+    - For loading a grammar from a text string use fromstring().
+
+    - For loading a grammar with functions, construct a CFGParser object, add
+      the functions using CFGParser.set_function(), and finally load the
+      grammar using fromfile or fromstring, passing in the CFGParser object
+      as well.
+
+    The parser performs a few basic checks on the grammar, such as missing
+    sub-rules and missing functions while loading. The CFGParser.verify function
+    goes a step further by expanding all alternatives.
+
+    To parse a sentence, use parse_raw() at a CFGParser instance to get maximum information, or
+    use parse() at a CFGParser instance to avoid getting exceptions.
+    """
     def __init__(self):
         self.rules = {}
         self.functions = {}
 
     @staticmethod
-    def fromfile(filename):
+    def fromfile(filename, parser=None):
+        """
+        Load the grammar from the provided file.
+
+        :param filename: Path to the text file containing the grammar
+        :param parser: If not None, the parser to use (else a new parser is created).
+        :return: The parser containing the grammar.
+        """
         with open(filename) as f:
             string = f.read()
-        return CFGParser.fromstring(string)
+        return CFGParser.fromstring(string, parser)
 
     @staticmethod
-    def fromstring(string):
-        parser = CFGParser()
+    def fromstring(string, parser=None):
+        """
+        Load the grammar from the provided text.
+
+        :param string: Text containing the grammar
+        :param parser: If not None, the parser to use (else a new parser is created).
+        :return: The parser containing the grammar.
+        """
+        if parser is None:
+            parser = CFGParser()
+
         for line in string.replace(";", "\n").split("\n"):
             line = line.strip()
             if line == "" or line[0] == '#':
                 continue
             parser.add_rule(line)
 
+        parser.check_rules()
         return parser
+
+    def check_rules(self):
+        """
+        Verify completeness of the loaded grammar, no rules that refer to missing
+        sub-rules and no functions that don't exist.
+        """
+        for rule in self.rules.itervalues():
+            for option in rule.options:
+                for conj in option.conjuncts:
+                    if conj.is_variable:
+                        assert conj.name in self.rules, "Rule '{}' is missing".format(conj.name)
+                    if conj.name[0] == '$':
+                        assert conj.name[1:] in self.functions, "Function '{}' is missing".format(conj.name[1:])
 
     def verify(self, target=None):
         if target is None:
@@ -335,6 +402,11 @@ class CFGParser:
             self.rules[rule.lname] = rule
 
     def set_function(self, name, func):
+        """
+        Add a new function to the parser. Must be done before loading the grammar.
+
+        TODO #11: Ensure the function expansion result does not refer to missing sub-rules or functions.
+        """
         self.functions[name] = func
 
     def get_semantics(self, tree):
@@ -354,6 +426,58 @@ class CFGParser:
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     def parse(self, target, words, debug=False):
+        """
+        Parse the given sentence against the grammar loaded in the class. This
+        method hides all errors (and returns False in that case). Use the
+        self.parse_raw function if the difference between a successful and
+        failed parse is relevant.
+
+        :param target: Target rule in the grammar to start parsing the sentence.
+        :type target: str.
+
+        :param words: Sentence to parse, either as a single string or a list of words.
+        :type words: str, or a list of str.
+
+        :param debug: If True, output the matched sequence in the tree.
+        :type debug: Boolean, by default False.
+
+        :return: The captured data value collected during parsing if parsing
+                 succeeds, else False.
+        """
+        try:
+            return self.parse_raw(target, words, debug)
+
+        except GrammarError as ex:
+            print "grammar_parser, Grammar error: {}".format(ex)
+            return False
+
+        except ParseError as ex:
+            print "grammar_parser, Parse error: {}".format(ex)
+            return False
+
+        return False
+
+
+    def parse_raw(self, target, words, debug=False):
+        """
+        Parse the given sentence against the grammar loaded in the class. This
+        method throws exceptions on failures, the self.parse function returns
+        False in such a case.
+
+        :param target: Target rule in the grammar to start parsing the sentence.
+        :type target: str.
+
+        :param words: Sentence to parse, either as a single string or a list of words.
+        :type words: str, or a list of str.
+
+        :param debug: If True, output the matched sequence in the tree.
+        :type debug: Boolean, by default False.
+
+        :return: The captured data value collected during parsing if parsing
+                 succeeds, a GrammarError exception if the grammar is found to
+                 be incorrect, or a ParseError exception if the sentence fails
+                 to match the grammar.
+        """
         if isinstance(words, basestring):
             words = words.split(" ")
 
@@ -362,9 +486,11 @@ class CFGParser:
 
         rule = self.rules[target]
 
+        best_fail = None
         for opt in rule.options:
             T = Tree(opt)
-            if self._parse((T, 0), words):
+            ret = self._parse((T, 0), words, 0)
+            if ret is None:
                 if debug:
                     print T.pretty_print()
                 # Simply take the first tree that successfully parses
@@ -373,43 +499,82 @@ class CFGParser:
                 # just let the yaml error bubble up, the will give a nice backtrace
                 return semantics
 
-        return False
+            elif best_fail is None or best_fail < ret:
+                best_fail = ret
 
-    def _parse(self, TIdx, words):
+        assert best_fail is not None
+        raise ParseError(words, best_fail)
+
+    def _parse(self, TIdx, words, word_index):
+        """
+        Try to match the provided words on the given grammar rule option.
+
+        :param TIdx: Tuple of grammar Rule, and rule alternative index.
+        :param words: Words to match on the alternative.
+        :param word_index: First word in words to match on the alternative.
+        :return: On successful match None is returned, else an index in words
+                 pointing at the position that failed to match. Note that the
+                 index may be equal to the number of words (indicating that
+                 words are missing).
+        """
         (T, idx) = TIdx
 
         if not T:
-            return words == []
+            # We ran out of grammar.
+            if len(words) == word_index:
+                # And out of words at the same time, hooray!
+                return None
+            return word_index
 
-        if not words:
-            return False
+        if  len(T.option.conjuncts) == idx:
+            return self._parse(T.next(idx), words, word_index)
 
+        # At least one grammar symbol exists.
         conj = T.option.conjuncts[idx]
 
         if conj.is_variable:
-            if not conj.name in self.rules:
-                return False
+            # Conjunct is a sub-rule, 'check_rules' ensures a sub-rule exists,
+            # but functions may introduce new sub-rule calls.
+            if conj.name not in self.rules:
+                raise GrammarError("Rule '{}' does not exist".format(conj.name))
+
             options = self.rules[conj.name].options
 
         elif conj.name[0] == "$":
+            # Conjunct is a function that must be expanded.
             func_name = conj.name[1:]
+
+            # 'check_rules' ensures the function exists, but a previous
+            # $function expansion may be wrong.
             if not func_name in self.functions:
-                return False
-            options = self.functions[func_name](words)
+                raise GrammarError("Function '{}' does not exist".format(func_name))
+
+            options = self.functions[func_name](words[word_index:])
+            # XXX Expanded result should not refer to missing sub-rules or
+            # functions. However, any check at this time is too late.
 
         else:
-            if conj.name == words[0]:
-                return self._parse(T.next(idx), words[1:])
-            else:
-                return False
+            # Conjunct is an actual word.
+            if word_index >= len(words):
+                # Ran out of words but not out of grammar terminals.
+                return word_index
 
+            if conj.name == words[word_index]:
+                return self._parse(T.next(idx), words, word_index + 1)
+            else:
+                return word_index
+
+        best_fail = None
         for opt in options:
             subtree = T.add_subtree(idx, Tree(opt))
-            ret = self._parse((subtree, 0), words)
-            if ret:
-                return ret
+            ret = self._parse((subtree, 0), words, word_index)
+            if ret is None:
+                return None
+            if best_fail is None or best_fail < ret:
+                best_fail = ret
 
-        return False
+        assert best_fail is not None
+        return best_fail
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

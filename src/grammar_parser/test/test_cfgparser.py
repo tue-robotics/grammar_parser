@@ -1,5 +1,7 @@
 import unittest
 from ..cfgparser import *
+from ...grammar_parser import cfgparser
+import os
 
 
 class TestOption(unittest.TestCase):
@@ -114,3 +116,185 @@ class TestParseNextAtom(unittest.TestCase):
         self.assertEqual(remaining, '')
 
 
+def normalize_string(text):
+    """
+    Normalize a multi-line string.
+
+    :param text: Multi-line text string.
+    :type  text: str
+
+    :return: Text string containing normalized lines.
+    :rtype:  str
+
+    Normalized lines means:
+    - Lines have been shifted to the left margin as far as possible.
+    - Lines have no trailing whitespace.
+    - Text has no leading or trailing empty lines.
+    """
+    lead_white_pat = re.compile('^( +)[^ ]')
+    lines = [line.rstrip() for line in text.split('\n')]
+
+    # Find trailing empty lines.
+    last = len(lines) - 1
+    while last >= 0 and lines[last] == '':
+        last = last - 1
+    if last < 0:
+        return ""
+
+    # Find leading empty lines.
+    first = 0
+    while lines[first] == '':
+        first = first + 1
+
+    lines = lines[first:last + 1]
+
+    # Strip common whitespace.
+    common_length = None
+    for line in lines:
+        m = lead_white_pat.match(line)
+        if m:
+            lead_length = len(m.group(1))
+            if common_length is None or lead_length < common_length:
+                common_length = lead_length
+
+    if common_length > 0:
+        for i, line in enumerate(lines):
+            if line != '':
+                lines[i] = line[common_length:]
+
+    return "\n".join(lines)
+
+
+class TestSingleRule(unittest.TestCase):
+    def setUp(self):
+        grammar = normalize_string("""
+            T[{"key":"value"}] -> a b c
+        """)
+
+        self.target_rule = 'T'
+        self.p = CFGParser.fromstring(grammar)
+
+    def test_single1(self):
+        with self.assertRaises(ParseError):
+            self.p.parse_raw(self.target_rule, '') # Missing first token 'a'.
+
+    def test_single2(self):
+        with self.assertRaises(ParseError):
+            self.p.parse_raw(self.target_rule, 'a') # Missing second token 'b'.
+
+    def test_single3(self):
+        with self.assertRaises(ParseError):
+            self.p.parse_raw(self.target_rule, 'b') # Incorrect first token.
+
+    def test_single4(self):
+        with self.assertRaises(ParseError):
+            self.p.parse_raw(self.target_rule, 'q') # Incorrect first token.
+
+    def test_single5(self):
+        with self.assertRaises(ParseError):
+            self.p.parse_raw(self.target_rule, 'a b') # Missing third token.
+
+    def test_single6(self):
+        with self.assertRaises(ParseError):
+            self.p.parse_raw(self.target_rule, 'a b c d') # Too many words.
+
+    def test_single7(self):
+        self.assertEquals(self.p.parse_raw(self.target_rule, 'a b c'), {'key': 'value'})
+
+
+class TestSubrules(unittest.TestCase):
+    def setUp(self):
+        grammar = normalize_string("""
+            T[X] -> A[X] | B[X]
+            A["a"] -> p
+            B["b"] -> q
+        """)
+
+        self.target_rule = 'T'
+        self.p = CFGParser.fromstring(grammar)
+
+    def test_sub1(self):
+        self.assertEquals(self.p.parse_raw(self.target_rule, 'p'), 'a')
+
+    def test_sub2(self):
+        self.assertEquals(self.p.parse_raw(self.target_rule, 'q'), 'b')
+
+
+class TestEmptySubrules(unittest.TestCase):
+    def setUp(self):
+        grammar = normalize_string("""
+            T[X] -> A[X] | B[X]
+            A["a"] -> p D
+            B["b"] -> q E
+            D -> | r
+            E -> r |
+        """)
+
+        self.target_rule = 'T'
+        self.p = CFGParser.fromstring(grammar)
+
+    def test_empty_subrule1(self):
+        self.assertEquals(self.p.parse_raw(self.target_rule, 'p'), 'a') # D reduces to empty.
+
+    def test_empty_subrule2(self):
+        self.assertEquals(self.p.parse_raw(self.target_rule, 'q'), 'b') # E reduces to empty.
+
+    def test_empty_subrule3(self):
+        self.assertEquals(self.p.parse_raw(self.target_rule, 'p r'), 'a')
+
+    def test_empty_subrule4(self):
+        self.assertEquals(self.p.parse_raw(self.target_rule, 'q r'), 'b')
+
+    def test_empty_subrule5(self):
+        with self.assertRaises(ParseError):
+            self.p.parse_raw(self.target_rule, 'q x') # Incorrect second token.
+
+
+class TestComplexGrammar(unittest.TestCase):
+    def setUp(self):
+        self.target_rule = 'T'
+
+        path = os.path.abspath(os.path.join(cfgparser.__file__, "../../../test/eegpsr_grammar.fcfg"))
+        print(path)
+        self.p = CFGParser.fromfile(path)
+
+    def test_eegpsr_1(self):
+        sentence = "answer a question"
+        expected = {'actions': [{'action': 'answer-question'}]}
+
+        actual = self.p.parse(self.target_rule, sentence)
+
+        self.assertEquals(expected, actual)
+
+    def test_eegpsr_2(self):
+        sentence = "could you please find rein near the living room"
+        expected = {'actions': [{'action': 'find', 'entity': {'loc': {'id': {'id': 'livingroom'}}, 'type': 'person'}}]}
+
+        actual = self.p.parse(self.target_rule, sentence)
+
+        self.assertEquals(expected, actual)
+
+    def test_eegpsr_3(self):
+        sentence = "robot exit the arena"
+        expected = {'actions': [{'action': 'exit'}]}
+
+        actual = self.p.parse(self.target_rule, sentence)
+
+        self.assertEquals(expected, actual)
+
+    def test_eegpsr_4(self):
+        sentence = "could you please deliver me the cans"
+        expected = {'actions': [{'action': 'bring', 'to': {'special': 'operator'}, 'entity': {'cat': 'cans'}}]}
+
+        actual = self.p.parse(self.target_rule, sentence)
+
+        self.assertEquals(expected, actual)
+
+    def test_eegpsr_5(self):
+        # This sentence does not make any common-sense but grammar-wise it does
+        sentence = "could you put the coke which is on the living room in the couch reach the living room and answer her question"
+        expected = {'actions': [{'action': 'bring', 'to': {'id': 'couch'}}, {'action': 'navigate', 'entity': {'id': {'id': 'livingroom'}}}, {'action': 'answer-question'}]}
+
+        actual = self.p.parse(self.target_rule, sentence)
+
+        self.assertEquals(expected, actual)
