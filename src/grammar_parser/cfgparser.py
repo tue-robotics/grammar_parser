@@ -405,7 +405,7 @@ class CFGParser:
         """
         Add a new function to the parser. Must be done before loading the grammar.
 
-        Todo: Ensure the function expansion result does not refer to missing sub-rules or functions.
+        TODO #11: Ensure the function expansion result does not refer to missing sub-rules or functions.
         """
         self.functions[name] = func
 
