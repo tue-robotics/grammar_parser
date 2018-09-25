@@ -1,5 +1,7 @@
 import unittest
 from ..cfgparser import *
+from ...grammar_parser import cfgparser
+import os
 
 
 class TestOption(unittest.TestCase):
@@ -163,7 +165,6 @@ def normalize_string(text):
     return "\n".join(lines)
 
 
-
 class TestSingleRule(unittest.TestCase):
     def setUp(self):
         grammar = normalize_string("""
@@ -199,6 +200,7 @@ class TestSingleRule(unittest.TestCase):
 
     def test_single7(self):
         self.assertEquals(self.p.parse_raw(self.target_rule, 'a b c'), {'key': 'value'})
+
 
 class TestSubrules(unittest.TestCase):
     def setUp(self):
@@ -246,3 +248,53 @@ class TestEmptySubrules(unittest.TestCase):
     def test_empty_subrule5(self):
         with self.assertRaises(ParseError):
             self.p.parse_raw(self.target_rule, 'q x') # Incorrect second token.
+
+
+class TestComplexGrammar(unittest.TestCase):
+    def setUp(self):
+        self.target_rule = 'T'
+
+        path = os.path.abspath(os.path.join(cfgparser.__file__, "../../../test/eegpsr_grammar.fcfg"))
+        print(path)
+        self.p = CFGParser.fromfile(path)
+
+    def test_eegpsr_1(self):
+        sentence = "answer a question"
+        expected = {'actions': [{'action': 'answer-question'}]}
+
+        actual = self.p.parse(self.target_rule, sentence)
+
+        self.assertEquals(expected, actual)
+
+    def test_eegpsr_2(self):
+        sentence = "could you please find rein near the living room"
+        expected = {'actions': [{'action': 'find', 'entity': {'loc': {'id': {'id': 'livingroom'}}, 'type': 'person'}}]}
+
+        actual = self.p.parse(self.target_rule, sentence)
+
+        self.assertEquals(expected, actual)
+
+    def test_eegpsr_3(self):
+        sentence = "robot exit the arena"
+        expected = {'actions': [{'action': 'exit'}]}
+
+        actual = self.p.parse(self.target_rule, sentence)
+
+        self.assertEquals(expected, actual)
+
+    def test_eegpsr_4(self):
+        sentence = "could you please deliver me the cans"
+        expected = {'actions': [{'action': 'bring', 'to': {'special': 'operator'}, 'entity': {'cat': 'cans'}}]}
+
+        actual = self.p.parse(self.target_rule, sentence)
+
+        self.assertEquals(expected, actual)
+
+    def test_eegpsr_5(self):
+        # This sentence does not make any common-sense but grammar-wise it does
+        sentence = "could you put the coke which is on the living room in the couch reach the living room and answer her question"
+        expected = {'actions': [{'action': 'bring', 'to': {'id': 'couch'}}, {'action': 'navigate', 'entity': {'id': {'id': 'livingroom'}}}, {'action': 'answer-question'}]}
+
+        actual = self.p.parse(self.target_rule, sentence)
+
+        self.assertEquals(expected, actual)
