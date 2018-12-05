@@ -40,6 +40,6 @@ sentence = args.sentence if args.sentence else grammar_parser.get_random_sentenc
 
 print "Parsing sentence:\n\n{}\n\n".format(sentence)
 
-result = grammar_parser.parse(args.target, sentence)
+result = grammar_parser.parse(args.target, sentence, debug=True)
 
 print "Result:\n\n{}".format(result)
