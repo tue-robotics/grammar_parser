@@ -1,6 +1,8 @@
+#!/usr/bin/env python
+
 import unittest
-from ..cfgparser import *
-from ...grammar_parser import cfgparser
+from grammar_parser.cfgparser import *
+from grammar_parser import cfgparser
 import os
 
 
@@ -298,3 +300,16 @@ class TestComplexGrammar(unittest.TestCase):
         actual = self.p.parse(self.target_rule, sentence)
 
         self.assertEquals(expected, actual)
+
+
+if __name__ == '__main__':
+    import rosunit
+    rosunit.unitrun("grammar_parser", 'test_grammar_parser', TestOption)
+    rosunit.unitrun("grammar_parser", 'test_grammar_parser', TestConjunct)
+    rosunit.unitrun("grammar_parser", 'test_grammar_parser', TestRule)
+    rosunit.unitrun("grammar_parser", 'test_grammar_parser', TestCfgParser)
+    rosunit.unitrun("grammar_parser", 'test_grammar_parser', TestParseNextAtom)
+    rosunit.unitrun("grammar_parser", 'test_grammar_parser', TestSingleRule)
+    rosunit.unitrun("grammar_parser", 'test_grammar_parser', TestSubrules)
+    rosunit.unitrun("grammar_parser", 'test_grammar_parser', TestEmptySubrules)
+    rosunit.unitrun("grammar_parser", 'test_grammar_parser', TestComplexGrammar)
