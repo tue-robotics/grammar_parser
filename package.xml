@@ -1,24 +1,28 @@
 <?xml version="1.0"?>
-<package>
+<package format="3">
   <name>grammar_parser</name>
   <version>0.0.1</version>
   <description>The grammar_parser package</description>
 
   <maintainer email="loy.vanbeek@gmail.com">Loy van Beek</maintainer>
 
-
   <license>TODO</license>
 
-
-  <url type="website">https://github.com/tue-robotics/grammar_parser</url>
-
+  <url type="bugtracker">https://github.com/tue-robotics/grammar_parser/issues</url>
+  <url type="repository">https://github.com/tue-robotics/grammar_parser</url>
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <build_depend>rospy</build_depend>
+  <depend>rospy</depend>
+  <depend>python-yaml</depend>
+  <depend>python-graphviz-pip</depend>
 
-  <run_depend>rospy</run_depend>
-  <run_depend>python-yaml</run_depend>
-  <run_depend>python-graphviz-pip</run_depend>
+  <doc_depend>python-sphinx</doc_depend>
+  <doc_depend>python-sphinx-autoapi-pip</doc_depend>
+  <doc_depend>python-sphinx-rtd-theme-pip</doc_depend>
+
+  <export>
+    <rosdoc config="rosdoc.yaml" />
+  </export>
 
 </package>
