@@ -54,25 +54,31 @@ The REPL sends the semantics to the action_server, which grounds the semantics b
 import random
 import re
 import yaml
-from yaml import MarkedYAMLError
+
 
 class GrammarError(Exception):
     """
     Exception indicating a problem in the grammar rules.
     """
+
     def __init__(self, message):
         Exception.__init__(self, message)
+
 
 class ParseError(Exception):
     """
     Exception indicating that the given sentence does not match on the grammar.
     """
+
     def __init__(self, words, word_index):
         if word_index < 0 or word_index >= len(words):
-            msg = "Word index {} is missing (sentence has {} words)".format(word_index, len(words))
+            msg = "Word index {} is missing (sentence has {} words)".format(
+                word_index, len(words))
         else:
-            msg = "Word '{}' at index {} failed to match".format(words[word_index], word_index)
+            msg = "Word '{}' at index {} failed to match".format(
+                words[word_index], word_index)
         Exception.__init__(self, msg)
+
 
 class bcolors:
     HEADER = '\033[95m'
@@ -100,7 +106,8 @@ class Option:
             self.conjuncts = []
 
     def __repr__(self):
-        return "Option(lsemantic='{lsem}', conjs={c})".format(lsem=self.lsemantic, c=self.conjuncts)
+        return "Option(lsemantic='{lsem}', conjs={c})".format(
+            lsem=self.lsemantic, c=self.conjuncts)
 
     def __eq__(self, other):
         if isinstance(other, Option):
@@ -129,7 +136,8 @@ class Option:
         # print(self, level)
         tabs = level * "    "
         ret = "\n"
-        ret += tabs + "Option(lsemantic='{lsem}', conjs=[".format(lsem=self.lsemantic)
+        ret += tabs + "Option(lsemantic='{lsem}', conjs=[".format(
+            lsem=self.lsemantic)
         for conj in self.conjuncts:
             # ret += "\n"
             # ret += tabs + "    " + "{c},".format(c=conj)
@@ -139,7 +147,9 @@ class Option:
         return ret
 
     def graphviz_id(self):
-        return "Option '{lsem}'".format(lsem=self.lsemantic).replace('"', '').replace(":", "")
+        return "Option '{lsem}'".format(lsem=self.lsemantic).replace('"',
+                                                                     '').replace(
+            ":", "")
 
     def to_graphviz(self, graph):
         for conj in self.conjuncts:
@@ -148,8 +158,6 @@ class Option:
 
 
 # ----------------------------------------------------------------------------------------------------
-
-
 
 
 class Conjunct:
@@ -164,8 +172,9 @@ class Conjunct:
         self.is_variable = is_variable
 
     def __repr__(self):
-        return "Conjunct(name='{name}', rsemantic='{r}', is_variable={v})".format(name=self.name, r=self.rsemantic,
-                                                                                  v=self.is_variable)
+        return "Conjunct(name='{name}', rsemantic='{r}', is_variable={v})".format(
+            name=self.name, r=self.rsemantic,
+            v=self.is_variable)
 
     def __eq__(self, other):
         if isinstance(other, Conjunct):
@@ -189,14 +198,14 @@ class Conjunct:
 # ----------------------------------------------------------------------------------------------------
 
 
-
 class Rule:
     def __init__(self, lname, options=None):
         self.lname = lname
         self.options = options if options else []
 
     def __repr__(self):
-        return "Rule(lname='{lname}', options={opts})".format(lname=self.lname, opts=self.options)
+        return "Rule(lname='{lname}', options={opts})".format(lname=self.lname,
+                                                              opts=self.options)
 
     def __eq__(self, other):
         if isinstance(other, Rule):
@@ -208,7 +217,8 @@ class Rule:
     def from_cfg_def(s):
         tmp = s.split(" -> ")
         if len(tmp) != 2:
-            raise Exception("Invalid grammar, please use proper ' -> ' arrows", tmp)
+            raise Exception("Invalid grammar, please use proper ' -> ' arrows",
+                            tmp)
 
         (lname, lsem, outstr) = parse_next_atom(tmp[0].strip())
 
@@ -238,7 +248,6 @@ class Rule:
 # ----------------------------------------------------------------------------------------------------
 
 
-
 class Tree:
     def __init__(self, option):
         self.option = option
@@ -248,12 +257,12 @@ class Tree:
 
     def next(self, idx):
         if idx + 1 < len(self.option.conjuncts):
-            return (self, idx + 1)
+            return self, idx + 1
         else:
             if self.parent:
                 return self.parent.next(self.parent_idx)
             else:
-                return (None, 0)
+                return None, 0
 
     def add_subtree(self, idx, tree):
         tree.parent = self
@@ -283,7 +292,6 @@ class Tree:
 # ----------------------------------------------------------------------------------------------------
 
 
-
 def parse_next_atom(s):
     """
     Returns (name, semantics, remaining_str)
@@ -297,14 +305,14 @@ def parse_next_atom(s):
     for i in range(0, len(s)):
         c = s[i]
         if c == ' ':
-            return (s[:i], "", s[i:].strip())
+            return s[:i], "", s[i:].strip()
         elif c == '[':
             j = s.find("]", i)
             if j < 0:
                 raise Exception
-            return (s[:i], s[i + 1:j], s[j + 1:].strip())
+            return s[:i], s[i + 1:j], s[j + 1:].strip()
 
-    return (s, "", "")
+    return s, "", ""
 
 
 # ----------------------------------------------------------------------------------------------------
@@ -331,6 +339,7 @@ class CFGParser:
     To parse a sentence, use parse_raw() at a CFGParser instance to get maximum information, or
     use parse() at a CFGParser instance to avoid getting exceptions.
     """
+
     def __init__(self):
         self.rules = {}
         self.functions = {}
@@ -374,13 +383,16 @@ class CFGParser:
         Verify completeness of the loaded grammar, no rules that refer to missing
         sub-rules and no functions that don't exist.
         """
-        for rule in self.rules.itervalues():
+        for rule in self.rules.values():
             for option in rule.options:
                 for conj in option.conjuncts:
                     if conj.is_variable:
-                        assert conj.name in self.rules, "Rule '{}' is missing".format(conj.name)
+                        assert conj.name in self.rules, "Rule '{}' is missing".format(
+                            conj.name)
                     if conj.name[0] == '$':
-                        assert conj.name[1:] in self.functions, "Function '{}' is missing".format(conj.name[1:])
+                        assert conj.name[
+                               1:] in self.functions, "Function '{}' is missing".format(
+                            conj.name[1:])
 
     def verify(self, target=None):
         if target is None:
@@ -457,7 +469,6 @@ class CFGParser:
 
         return False
 
-
     def parse_raw(self, target, words, debug=False):
         """
         Parse the given sentence against the grammar loaded in the class. This
@@ -481,8 +492,9 @@ class CFGParser:
         if isinstance(words, basestring):
             words = words.split(" ")
 
-        if not target in self.rules:
-            raise Exception("Target {} not present in grammar rules".format(target))
+        if target not in self.rules:
+            raise Exception(
+                "Target {} not present in grammar rules".format(target))
 
         rule = self.rules[target]
 
@@ -494,7 +506,8 @@ class CFGParser:
                 if debug:
                     print(T.pretty_print())
                 # Simply take the first tree that successfully parses
-                semantics_str = self.get_semantics(T).replace("<", "[").replace(">", "]")
+                semantics_str = self.get_semantics(T).replace("<", "[").replace(
+                    ">", "]")
                 semantics = yaml.safe_load(semantics_str)
                 # just let the yaml error bubble up, the will give a nice backtrace
                 return semantics
@@ -526,7 +539,7 @@ class CFGParser:
                 return None
             return word_index
 
-        if  len(T.option.conjuncts) == idx:
+        if len(T.option.conjuncts) == idx:
             return self._parse(T.next(idx), words, word_index)
 
         # At least one grammar symbol exists.
@@ -547,7 +560,8 @@ class CFGParser:
             # 'check_rules' ensures the function exists, but a previous
             # $function expansion may be wrong.
             if not func_name in self.functions:
-                raise GrammarError("Function '{}' does not exist".format(func_name))
+                raise GrammarError(
+                    "Function '{}' does not exist".format(func_name))
 
             options = self.functions[func_name](words[word_index:])
             # XXX Expanded result should not refer to missing sub-rules or
@@ -630,11 +644,12 @@ class CFGParser:
     def get_completion_function(self, func_name):
         return self.functions[func_name]
 
-    def graphviz_id(self):
+    @staticmethod
+    def graphviz_id():
         return "CFGParser"
 
     def to_graphviz(self, graph):
-        for name, rule in self.rules.iteritems():
+        for name, rule in self.rules.items():
             graph.edge(self.graphviz_id(), rule.graphviz_id())
             rule.to_graphviz(graph)
 
@@ -642,7 +657,9 @@ class CFGParser:
         previous_words = [] if not previous_words else previous_words
 
         import itertools
-        colors = itertools.cycle(["blue", "green", "red", "cyan", "magenta", "black", "purple", "orange"])
+        colors = itertools.cycle(
+            ["blue", "green", "red", "cyan", "magenta", "black", "purple",
+             "orange"])
 
         if previous_words:
             previous_word = previous_words[-1]
@@ -657,11 +674,14 @@ class CFGParser:
 
             for next_word in next_words:
                 graph.edge(previous_word, next_word, color=colors.next())
-                self.visualize_options(graph, target_rule, previous_words + [next_word], depth=depth - 1)
+                self.visualize_options(graph, target_rule,
+                                       previous_words + [next_word],
+                                       depth=depth - 1)
 
     def get_unwrapped(self, lname):
         if lname not in self.rules:
-            raise Exception("Target {} not present in grammar rules".format(lname))
+            raise Exception(
+                "Target {} not present in grammar rules".format(lname))
 
         rule = self.rules[lname]
 
@@ -694,12 +714,13 @@ class CFGParser:
         while re.search('\([^)]+\)', spec):
             options = re.findall('\([^()]+\)', spec)
             for option in options:
-                spec = spec.replace(option, random.choice(option[1:-1].split("|")), 1)
+                spec = spec.replace(option,
+                                    random.choice(option[1:-1].split("|")), 1)
 
         return spec
 
 
-class Visualizer(object):
+class Visualizer:
     def __init__(self, grammarfile):
         self.parser = CFGParser.fromfile(grammarfile)
 
