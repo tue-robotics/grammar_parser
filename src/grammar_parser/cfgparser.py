@@ -126,7 +126,7 @@ class Option:
             yield opt
 
     def pretty_print(self, level=0):
-        # print self, level
+        # print(self, level)
         tabs = level * "    "
         ret = "\n"
         ret += tabs + "Option(lsemantic='{lsem}', conjs=[".format(lsem=self.lsemantic)
@@ -448,11 +448,11 @@ class CFGParser:
             return self.parse_raw(target, words, debug)
 
         except GrammarError as ex:
-            print "grammar_parser, Grammar error: {}".format(ex)
+            print("grammar_parser, Grammar error: {}".format(ex))
             return False
 
         except ParseError as ex:
-            print "grammar_parser, Parse error: {}".format(ex)
+            print("grammar_parser, Parse error: {}".format(ex))
             return False
 
         return False
@@ -492,7 +492,7 @@ class CFGParser:
             ret = self._parse((T, 0), words, 0)
             if ret is None:
                 if debug:
-                    print T.pretty_print()
+                    print(T.pretty_print())
                 # Simply take the first tree that successfully parses
                 semantics_str = self.get_semantics(T).replace("<", "[").replace(">", "]")
                 semantics = yaml.safe_load(semantics_str)
@@ -653,7 +653,7 @@ class CFGParser:
         next_words = set(self.next_word(target_rule, previous_words))
 
         if next_words and depth:
-            # print next_words
+            # print(next_words)
 
             for next_word in next_words:
                 graph.edge(previous_word, next_word, color=colors.next())
