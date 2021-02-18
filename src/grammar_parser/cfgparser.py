@@ -489,7 +489,7 @@ class CFGParser:
                  be incorrect, or a ParseError exception if the sentence fails
                  to match the grammar.
         """
-        if isinstance(words, basestring):
+        if isinstance(words, str):
             words = words.split(" ")
 
         if target not in self.rules:
