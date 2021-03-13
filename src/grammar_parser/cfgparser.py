@@ -51,6 +51,7 @@ The semantics are returned to whomever called CFGParser.parse(...), usually the 
 The REPL sends the semantics to the action_server, which grounds the semantics by implementing the actions.
 """
 
+import itertools
 import random
 import re
 import yaml
@@ -133,7 +134,6 @@ class Option:
             yield opt
 
     def pretty_print(self, level=0):
-        # print(self, level)
         tabs = level * "    "
         ret = "\n"
         ret += tabs + "Option(lsemantic='{lsem}', conjs=[".format(
@@ -656,7 +656,6 @@ class CFGParser:
     def visualize_options(self, graph, target_rule, previous_words=None, depth=2):
         previous_words = [] if not previous_words else previous_words
 
-        import itertools
         colors = itertools.cycle(
             ["blue", "green", "red", "cyan", "magenta", "black", "purple",
              "orange"])
@@ -670,8 +669,6 @@ class CFGParser:
         next_words = set(self.next_word(target_rule, previous_words))
 
         if next_words and depth:
-            # print(next_words)
-
             for next_word in next_words:
                 graph.edge(previous_word, next_word, color=colors.next())
                 self.visualize_options(graph, target_rule,
@@ -720,29 +717,28 @@ class CFGParser:
         return spec
 
 
-class Visualizer:
-    def __init__(self, grammarfile):
-        self.parser = CFGParser.fromfile(grammarfile)
-
-    def get_completion_function(self, name):
-        return lambda x: [Option(name, [Conjunct(name.upper())])]
-
-    def test(self, rule, depth):
-        import graphviz
-        self.parser.has_completion_function = lambda func_name: True
-        self.parser.get_completion_function = self.get_completion_function
-
-        g = graphviz.Digraph(strict=True)
-        self.parser.visualize_options(g, rule, depth=int(depth))
-        g.render('options', view=True)
-
-
 if __name__ == "__main__":
+    import graphviz
     import sys
 
     grammar_file = sys.argv[1]
     rule = sys.argv[2]
     depth = int(sys.argv[3])
+    
+    class Visualizer:
+        def __init__(self, grammarfile):
+            self.parser = CFGParser.fromfile(grammarfile)
+
+        def get_completion_function(self, name):
+            return lambda x: [Option(name, [Conjunct(name.upper())])]
+
+        def test(self, rule, depth):
+            self.parser.has_completion_function = lambda func_name: True
+            self.parser.get_completion_function = self.get_completion_function
+
+            g = graphviz.Digraph(strict=True)
+            self.parser.visualize_options(g, rule, depth=int(depth))
+            g.render('options', view=True)
 
     tester = Visualizer(grammar_file)
     tester.test(rule, depth=depth)
