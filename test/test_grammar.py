@@ -6,7 +6,7 @@ import os
 
 def read_valid_file(p, arg):
     if not os.path.exists(arg):
-        p.error("The file %s does not exist!" % arg)
+        p.error(f"The file {arg} does not exist!")
     else:
         return open(arg, 'r').read()
 
@@ -29,7 +29,7 @@ if not args.random and not args.sentence:
 
 grammar = args.grammar_file if args.grammar_file else args.grammar
 
-print "Parsing grammar:\n\n{}\n\n".format(grammar)
+print(f"Parsing grammar:\n\n{grammar}\n\n")
 
 grammar_parser = CFGParser.fromstring(grammar)
 
@@ -38,8 +38,8 @@ if args.verify:
 
 sentence = args.sentence if args.sentence else grammar_parser.get_random_sentence(args.target)
 
-print "Parsing sentence:\n\n{}\n\n".format(sentence)
+print(f"Parsing sentence:\n\n{sentence}\n\n")
 
 result = grammar_parser.parse(args.target, sentence, debug=True)
 
-print "Result:\n\n{}".format(result)
+print(f"Result:\n\n{result}")
