@@ -1,16 +1,21 @@
-[![Build Status](https://travis-ci.org/tue-robotics/grammar_parser.svg?branch=master)](https://travis-ci.org/tue-robotics/grammar_parser)
+# grammar_parser
 
-# Parser for (Context Free) Grammars
+[![CI](https://github.com/tue-robotics/grammar_parser/actions/workflows/main.yml/badge.svg)](https://github.com/tue-robotics/grammar_parser/actions/workflows/main.yml)
+
+Parser for (Context Free) Grammars
 
 Example grammars:
-```
+
+```text
 'T -> yes | no'
 ```
-where 'T' is the so-called root of the grammar. Pipe-characters '|' separate the options to choose from at the grammar root, either 'yes' or 'no'. 
-Each '... -> ...' is a Rule in the grammar. A Rule is satisfied if the input string is either of the options at the right side of the arrow. 
+
+where 'T' is the so-called root of the grammar. Pipe-characters '|' separate the options to choose from at the grammar root, either 'yes' or 'no'.
+Each '... -> ...' is a Rule in the grammar. A Rule is satisfied if the input string is either of the options at the right side of the arrow.
 
 Another, for taking restaurant orders:
-```
+
+```text
 O[P] -> ORDER[P] | can i have a ORDER[P] | i would like ORDER[P] | can i get ORDER[P] | could i have ORDER[P] | may i get ORDER[P] | bring me ORDER[P]
 ORDER[OO] -> COMBO[OO] | BEVERAGE[OO]
 BEVERAGE[{"beverage": B}] -> BEV[B]
@@ -26,31 +31,35 @@ FOOD['pizza'] -> pizza[B]
 BEV['steak'] -> steak[B]
 ```
 
-Here, the root of the grammar is 'O' and it has a *variable* P. This will be 'unified' with the customers selection. 
+Here, the root of the grammar is 'O' and it has a *variable* P. This will be 'unified' with the customers selection.
 
-The capital-writte bits are references to another Rule. 
+The capital-writte bits are references to another Rule.
 
-```O[P]``` refers to ```ORDER[P]``` is several options. 
-The Rule that matches this is ```ORDER[OO]```, which in turn refers to ```COMBO[OO] | BEVERAGE[OO]```. 
-Note that while ```O[P]``` used ```P``` as the variable name, ```ORDER[OO]``` used ```OO``` as the variable name. This is just like a variable name in a function call, the caller and the callee can use different names for the same bit of data. 
+```O[P]``` refers to ```ORDER[P]``` is several options.
+The Rule that matches this is ```ORDER[OO]```, which in turn refers to ```COMBO[OO] | BEVERAGE[OO]```.
+Note that while ```O[P]``` used ```P``` as the variable name, ```ORDER[OO]``` used ```OO``` as the variable name. This is just like a variable name in a function call, the caller and the callee can use different names for the same bit of data.
 
-```BEVERAGE[OO]``` refers to the rules 
-```
+```BEVERAGE[OO]``` refers to the rules
+
+```text
 BEVERAGE[{"beverage": B}] -> BEV[B]
 BEVERAGE[{"beverage": B}] -> DET BEV[B]
 ```
-Futher down, ```DET -> a | an``` is defined, so one can use 'a' or 'an' (as a DETerminant). 
 
-With or without DET, the BEVERAGE-rules both refer to ```BEV[B]``` which is defined as either 'coke' or 'fanta' due to the two rules 
-```
+Futher down, ```DET -> a | an``` is defined, so one can use 'a' or 'an' (as a DETerminant).
+
+With or without DET, the BEVERAGE-rules both refer to ```BEV[B]``` which is defined as either 'coke' or 'fanta' due to the two rules
+
+```text
 BEV['coke'] -> coke[B]
 BEV['fanta'] -> fanta[B]
 ```
 
-When one of these rules are satisfied/match, the variable ```B``` is unified: the matching text is assigned to it, i.e ```B``` = ```coke```. When going back up the tree, the ```BEVERAGE[{"beverage": B}] -> BEV[B]``` rule puts the value of ```B``` in the dictionary at the "bevarage" key. 
-That bubbles further up the tree to assign that dictionary to the variable ```OO``` in ```ORDER[OO]``` and that bubbles it up into ```O[P]```. 
+When one of these rules are satisfied/match, the variable ```B``` is unified: the matching text is assigned to it, i.e ```B``` = ```coke```. When going back up the tree, the ```BEVERAGE[{"beverage": B}] -> BEV[B]``` rule puts the value of ```B``` in the dictionary at the "bevarage" key.
+That bubbles further up the tree to assign that dictionary to the variable ```OO``` in ```ORDER[OO]``` and that bubbles it up into ```O[P]```.
 
-After an input sentence is parsed according to this grammar, the output is the dictionary assigned to ```OO```: 
-```python
+After an input sentence is parsed according to this grammar, the output is the dictionary assigned to ```OO```:
+
+```json
 {"beverage": "coke"}
 ```
