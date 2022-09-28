@@ -296,7 +296,9 @@ def parse_next_atom(s):
     """
     Returns (name, semantics, remaining_str)
     For example for "VP[X, Y] foo bar" it returns:
-         ("VP", "X, Y", "foo bar")
+
+        ("VP", "X, Y", "foo bar")
+
     :param s:
     :return: Tuple with the rule's lname, the variables involved and the remaining text: ("VP", "X, Y", "foo bar")
     """
@@ -724,7 +726,7 @@ if __name__ == "__main__":
     grammar_file = sys.argv[1]
     rule = sys.argv[2]
     depth = int(sys.argv[3])
-    
+
     class Visualizer:
         def __init__(self, grammarfile):
             self.parser = CFGParser.fromfile(grammarfile)
