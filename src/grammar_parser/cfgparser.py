@@ -80,14 +80,14 @@ class ParseError(Exception):
 
 
 class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+    HEADER = "\033[95m"
+    OKBLUE = "\033[94m"
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
 
 
 class Option:
@@ -297,9 +297,9 @@ def parse_next_atom(s):
 
     for i in range(0, len(s)):
         c = s[i]
-        if c == ' ':
+        if c == " ":
             return s[:i], "", s[i:].strip()
-        elif c == '[':
+        elif c == "[":
             j = s.find("]", i)
             if j < 0:
                 raise Exception
@@ -364,7 +364,7 @@ class CFGParser:
 
         for line in string.replace(";", "\n").split("\n"):
             line = line.strip()
-            if line == "" or line[0] == '#':
+            if line == "" or line[0] == "#":
                 continue
             parser.add_rule(line)
 
@@ -693,8 +693,8 @@ class CFGParser:
         unwrapped = self.get_unwrapped(lname)
 
         spec = "(%s)" % unwrapped
-        while re.search('\([^)]+\)', spec):
-            options = re.findall('\([^()]+\)', spec)
+        while re.search("\([^)]+\)", spec):
+            options = re.findall("\([^()]+\)", spec)
             for option in options:
                 spec = spec.replace(option,
                                     random.choice(option[1:-1].split("|")), 1)
@@ -723,7 +723,7 @@ if __name__ == "__main__":
 
             g = graphviz.Digraph(strict=True)
             self.parser.visualize_options(g, rule, depth=int(depth))
-            g.render('options', view=True)
+            g.render("options", view=True)
 
     tester = Visualizer(grammar_file)
     tester.test(rule, depth=depth)
