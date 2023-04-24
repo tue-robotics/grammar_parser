@@ -73,11 +73,9 @@ class ParseError(Exception):
 
     def __init__(self, words, word_index):
         if word_index < 0 or word_index >= len(words):
-            msg = "Word index {} is missing (sentence has {} words)".format(
-                word_index, len(words))
+            msg = f"Word index {word_index} is missing (sentence has {len(words)} words)"
         else:
-            msg = "Word '{}' at index {} failed to match".format(
-                words[word_index], word_index)
+            msg = f"Word '{words[word_index]}' at index {word_index} failed to match"
         Exception.__init__(self, msg)
 
 
@@ -107,8 +105,7 @@ class Option:
             self.conjuncts = []
 
     def __repr__(self):
-        return "Option(lsemantic='{lsem}', conjs={c})".format(
-            lsem=self.lsemantic, c=self.conjuncts)
+        return f"Option(lsemantic='{self.lsemantic}', conjs={self.conjuncts})"
 
     def __eq__(self, other):
         if isinstance(other, Option):
@@ -136,20 +133,17 @@ class Option:
     def pretty_print(self, level=0):
         tabs = level * "    "
         ret = "\n"
-        ret += tabs + "Option(lsemantic='{lsem}', conjs=[".format(
-            lsem=self.lsemantic)
+        ret += tabs + f"Option(lsemantic='{self.lsemantic}', conjs=["
         for conj in self.conjuncts:
             # ret += "\n"
-            # ret += tabs + "    " + "{c},".format(c=conj)
+            # ret += tabs + "    " + f"{conj},"
             ret += " "
             ret += conj.pretty_print()
         ret += "])"
         return ret
 
     def graphviz_id(self):
-        return "Option '{lsem}'".format(lsem=self.lsemantic).replace('"',
-                                                                     '').replace(
-            ":", "")
+        return f"Option '{self.lsemantic}'".replace('"', "").replace(":", "")
 
     def to_graphviz(self, graph):
         for conj in self.conjuncts:
@@ -172,9 +166,7 @@ class Conjunct:
         self.is_variable = is_variable
 
     def __repr__(self):
-        return "Conjunct(name='{name}', rsemantic='{r}', is_variable={v})".format(
-            name=self.name, r=self.rsemantic,
-            v=self.is_variable)
+        return f"Conjunct(name='{self.name}', rsemantic='{self.rsemantic}', is_variable={self.is_variable})"
 
     def __eq__(self, other):
         if isinstance(other, Conjunct):
@@ -189,7 +181,7 @@ class Conjunct:
             return bcolors.OKGREEN + self.name + bcolors.ENDC  # + str(self)
 
     def graphviz_id(self):
-        return "Conjunct {name}".format(name=self.name)
+        return f"Conjunct {self.name}"
 
     def to_graphviz(self, graph):
         graph.node(self.graphviz_id())
@@ -204,8 +196,7 @@ class Rule:
         self.options = options if options else []
 
     def __repr__(self):
-        return "Rule(lname='{lname}', options={opts})".format(lname=self.lname,
-                                                              opts=self.options)
+        return f"Rule(lname='{self.lname}', options={self.options})"
 
     def __eq__(self, other):
         if isinstance(other, Rule):
@@ -237,7 +228,7 @@ class Rule:
         return ret
 
     def graphviz_id(self):
-        return "Rule {lname}".format(lname=self.lname)
+        return f"Rule {self.lname}"
 
     def to_graphviz(self, graph):
         for opt in self.options:
@@ -389,12 +380,9 @@ class CFGParser:
             for option in rule.options:
                 for conj in option.conjuncts:
                     if conj.is_variable:
-                        assert conj.name in self.rules, "Rule '{}' is missing".format(
-                            conj.name)
-                    if conj.name[0] == '$':
-                        assert conj.name[
-                               1:] in self.functions, "Function '{}' is missing".format(
-                            conj.name[1:])
+                        assert conj.name in self.rules, f"Rule '{conj.name}' is missing"
+                    if conj.name[0] == "$":
+                        assert conj.name[1:] in self.functions, f"Function '{conj.name[1:]}' is missing"
 
     def verify(self, target=None):
         if target is None:
@@ -462,14 +450,12 @@ class CFGParser:
             return self.parse_raw(target, words, debug)
 
         except GrammarError as ex:
-            print("grammar_parser, Grammar error: {}".format(ex))
+            print(f"grammar_parser, Grammar error: {ex}")
             return False
 
         except ParseError as ex:
-            print("grammar_parser, Parse error: {}".format(ex))
+            print(f"grammar_parser, Parse error: {ex}")
             return False
-
-        return False
 
     def parse_raw(self, target, words, debug=False):
         """
@@ -495,8 +481,7 @@ class CFGParser:
             words = words.split(" ")
 
         if target not in self.rules:
-            raise Exception(
-                "Target {} not present in grammar rules".format(target))
+            raise Exception(f"Target {target} not present in grammar rules")
 
         rule = self.rules[target]
 
@@ -551,7 +536,7 @@ class CFGParser:
             # Conjunct is a sub-rule, 'check_rules' ensures a sub-rule exists,
             # but functions may introduce new sub-rule calls.
             if conj.name not in self.rules:
-                raise GrammarError("Rule '{}' does not exist".format(conj.name))
+                raise GrammarError(f"Rule '{conj.name}' does not exist")
 
             options = self.rules[conj.name].options
 
@@ -562,8 +547,7 @@ class CFGParser:
             # 'check_rules' ensures the function exists, but a previous
             # $function expansion may be wrong.
             if not func_name in self.functions:
-                raise GrammarError(
-                    "Function '{}' does not exist".format(func_name))
+                raise GrammarError(f"Function '{func_name}' does not exist")
 
             options = self.functions[func_name](words[word_index:])
             # XXX Expanded result should not refer to missing sub-rules or
@@ -679,8 +663,7 @@ class CFGParser:
 
     def get_unwrapped(self, lname):
         if lname not in self.rules:
-            raise Exception(
-                "Target {} not present in grammar rules".format(lname))
+            raise Exception(f"Target {lname} not present in grammar rules")
 
         rule = self.rules[lname]
 
