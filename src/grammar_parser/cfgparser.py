@@ -130,8 +130,8 @@ class Option:
 
             yield opt
 
-    def pretty_print(self, level=0):
-        tabs = level * "    "
+    def pretty_print(self, level=0, indent="    "):
+        tabs = level * indent
         ret = "\n"
         ret += tabs + f"Option(lsemantic='{self.lsemantic}', conjs=["
         for conj in self.conjuncts:
@@ -172,13 +172,15 @@ class Conjunct:
 
     def __eq__(self, other):
         if isinstance(other, Conjunct):
-            return self.name == other.name and self.rsemantic == other.rsemantic and self.is_variable == other.is_variable
+            return (
+                self.name == other.name and self.rsemantic == other.rsemantic and self.is_variable == other.is_variable
+            )
         return False
 
     def pretty_print(self, level=0):
         if self.is_variable or "$" in self.name:
             prefix = self.rsemantic + "="
-            return self.rsemantic + "=" + self.name  # + str(self)
+            return prefix + self.name  # + str(self)
         else:
             return bcolors.OKGREEN + self.name + bcolors.ENDC  # + str(self)
 
@@ -210,10 +212,9 @@ class Rule:
     def from_cfg_def(s):
         tmp = s.split(" -> ")
         if len(tmp) != 2:
-            raise Exception("Invalid grammar, please use proper ' -> ' arrows",
-                            tmp)
+            raise Exception("Invalid grammar, please use proper ' -> ' arrows", tmp)
 
-        (lname, lsem, outstr) = parse_next_atom(tmp[0].strip())
+        lname, lsem, outstr = parse_next_atom(tmp[0].strip())
 
         rule = Rule(lname)
 
@@ -221,8 +222,8 @@ class Rule:
 
         return rule
 
-    def pretty_print(self, level=0):
-        tabs = (level) * '    '
+    def pretty_print(self, level=0, indent="    "):
+        tabs = level * indent
         ret = ""
         ret += tabs + self.lname
         for option in self.options:
@@ -267,10 +268,10 @@ class Tree:
         # TODO: Make this print like a tree
         return str(zip(self.option.conjuncts, self.subtrees))
 
-    def pretty_print(self, level=0):
+    def pretty_print(self, level=0, indent="    "):
         # print self, level
-        # tabs = (level-1)*'    ' + "│   ├───"
-        tabs = (level) * '    ' + "└───"
+        # tabs = (level-1)*indent + "│   ├───"
+        tabs = level * indent + "└───"
         # tabs = "\t" * level #
         ret = ""  # "#tabs + self.option.pretty_print(level=level)
         for conjunct, subtree in zip(self.option.conjuncts, self.subtrees):
@@ -305,7 +306,7 @@ def parse_next_atom(s):
             j = s.find("]", i)
             if j < 0:
                 raise Exception
-            return s[:i], s[i + 1:j], s[j + 1:].strip()
+            return s[:i], s[i + 1 : j], s[j + 1 :].strip()
 
     return s, "", ""
 
@@ -496,8 +497,7 @@ class CFGParser:
                 if debug:
                     print(T.pretty_print())
                 # Simply take the first tree that successfully parses
-                semantics_str = self.get_semantics(T).replace("<", "[").replace(
-                    ">", "]")
+                semantics_str = self.get_semantics(T).replace("<", "[").replace(">", "]")
                 semantics = yaml.safe_load(semantics_str)
                 # just let the yaml error bubble up, the will give a nice backtrace
                 return semantics
@@ -582,7 +582,7 @@ class CFGParser:
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     def next_word(self, target, words):
-        if not target in self.rules:
+        if target not in self.rules:
             return False
 
         rule = self.rules[target]
@@ -602,7 +602,7 @@ class CFGParser:
         conj = T.option.conjuncts[idx]
 
         if conj.is_variable:
-            if not conj.name in self.rules:
+            if conj.name not in self.rules:
                 return []
             options = self.rules[conj.name].options
 
@@ -613,7 +613,7 @@ class CFGParser:
             options = self.get_completion_function(func_name)(words)
 
         else:
-            if words == []:
+            if not words:
                 return [conj.name]
             elif conj.name == words[0]:
                 return self._next_word(T.next(idx), words[1:])
@@ -645,9 +645,7 @@ class CFGParser:
     def visualize_options(self, graph, target_rule, previous_words=None, depth=2):
         previous_words = [] if not previous_words else previous_words
 
-        colors = itertools.cycle(
-            ["blue", "green", "red", "cyan", "magenta", "black", "purple",
-             "orange"])
+        colors = itertools.cycle(["blue", "green", "red", "cyan", "magenta", "black", "purple", "orange"])
 
         if previous_words:
             previous_word = previous_words[-1]
@@ -660,9 +658,7 @@ class CFGParser:
         if next_words and depth:
             for next_word in next_words:
                 graph.edge(previous_word, next_word, color=colors.next())
-                self.visualize_options(graph, target_rule,
-                                       previous_words + [next_word],
-                                       depth=depth - 1)
+                self.visualize_options(graph, target_rule, previous_words + [next_word], depth=depth - 1)
 
     def get_unwrapped(self, lname):
         if lname not in self.rules:
@@ -675,7 +671,6 @@ class CFGParser:
             conj_strings = []
 
             for conj in opt.conjuncts:
-
                 if conj.is_variable:
                     unwrapped_string = self.get_unwrapped(conj.name)
                     if unwrapped_string:
@@ -699,8 +694,7 @@ class CFGParser:
         while re.search("\([^)]+\)", spec):
             options = re.findall("\([^()]+\)", spec)
             for option in options:
-                spec = spec.replace(option,
-                                    random.choice(option[1:-1].split("|")), 1)
+                spec = spec.replace(option, random.choice(option[1:-1].split("|")), 1)
 
         return spec
 
@@ -717,7 +711,8 @@ if __name__ == "__main__":
         def __init__(self, grammarfile):
             self.parser = CFGParser.fromfile(grammarfile)
 
-        def get_completion_function(self, name):
+        @staticmethod
+        def get_completion_function(name):
             return lambda x: [Option(name, [Conjunct(name.upper())])]
 
         def test(self, rule, depth):
