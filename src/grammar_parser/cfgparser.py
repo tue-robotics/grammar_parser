@@ -92,7 +92,7 @@ class bcolors:
 
 class Option:
     """An option is a continuation of a sentence of where there are multiple ways to continue the sentence.
-    These choices in an Option are called called conjuncts."""
+    These choices in an Option are called conjuncts."""
 
     def __init__(self, lsemantic="", conjs=None):
         """Constructor of an Option
@@ -115,7 +115,7 @@ class Option:
 
     @staticmethod
     def from_cfg_def(option_definition, left_semantics):
-        """Parse text from the CFG definition into an Option and the choices it is composed of. """
+        """Parse text from the CFG definition into an Option and the choices it is composed of."""
         opt_strs = option_definition.split("|")
 
         for opt_str in opt_strs:
@@ -155,12 +155,14 @@ class Option:
 
 
 class Conjunct:
-    """"A Conjunct is a placeholder in the parse-tree, which can be filled in by an Option or a word"""
+    """A Conjunct is a placeholder in the parse-tree, which can be filled in by an Option or a word"""
 
     def __init__(self, name, rsemantic="", is_variable=False):
-        """:param name the word or variable
-        :param rsemantic what option is the Conjunct part of
-        :param is_variable is the conjunct variable or terminal?"""
+        """
+        :param name: the word or variable
+        :param rsemantic: what option is the Conjunct part of
+        :param is_variable: is the conjunct variable or terminal?
+        """
         self.name = name
         self.rsemantic = rsemantic
         self.is_variable = is_variable
@@ -413,7 +415,8 @@ class CFGParser:
 
     def get_semantics(self, tree):
         """Get the semantics of a tree.
-        This means that variables are unified with their values, which may be recursively gotten from the tree's subtrees. """
+        This means that variables are unified with their values, which may be recursively gotten from the tree's subtrees.
+        """
         semantics = tree.option.lsemantic
         for i in range(0, len(tree.subtrees)):
             conj = tree.option.conjuncts[i]
