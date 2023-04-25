@@ -8,7 +8,8 @@ def read_valid_file(p, arg):
     if not os.path.exists(arg):
         p.error(f"The file {arg} does not exist!")
     else:
-        return open(arg, 'r').read()
+        return open(arg, "r").read()
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("target", type=str)
