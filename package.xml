@@ -5,7 +5,7 @@
 <package format="3">
   <name>grammar_parser</name>
   <version>0.0.1</version>
-  <description>The grammar_parser package</description>
+  <description>Context free grammar parser tools</description>
 
   <maintainer email="loy.vanbeek@gmail.com">Loy van Beek</maintainer>
 
