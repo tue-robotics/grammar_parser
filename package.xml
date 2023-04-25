@@ -22,6 +22,8 @@
   <depend>python3-yaml</depend>
   <depend>python-graphviz-pip</depend>
 
+  <test_depend>catkin_lint_cmake</test_depend>
+
   <doc_depend>python3-sphinx</doc_depend>
   <doc_depend>python-sphinx-autoapi-pip</doc_depend>
   <doc_depend>python-sphinx-rtd-theme-pip</doc_depend>
