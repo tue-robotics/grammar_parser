@@ -73,28 +73,26 @@ class ParseError(Exception):
 
     def __init__(self, words, word_index):
         if word_index < 0 or word_index >= len(words):
-            msg = "Word index {} is missing (sentence has {} words)".format(
-                word_index, len(words))
+            msg = f"Word index {word_index} is missing (sentence has {len(words)} words)"
         else:
-            msg = "Word '{}' at index {} failed to match".format(
-                words[word_index], word_index)
+            msg = f"Word '{words[word_index]}' at index {word_index} failed to match"
         Exception.__init__(self, msg)
 
 
 class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
+    HEADER = "\033[95m"
+    OKBLUE = "\033[94m"
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+    UNDERLINE = "\033[4m"
 
 
 class Option:
     """An option is a continuation of a sentence of where there are multiple ways to continue the sentence.
-    These choices in an Option are called called conjuncts."""
+    These choices in an Option are called conjuncts."""
 
     def __init__(self, lsemantic="", conjs=None):
         """Constructor of an Option
@@ -107,8 +105,7 @@ class Option:
             self.conjuncts = []
 
     def __repr__(self):
-        return "Option(lsemantic='{lsem}', conjs={c})".format(
-            lsem=self.lsemantic, c=self.conjuncts)
+        return f"Option(lsemantic='{self.lsemantic}', conjs={self.conjuncts})"
 
     def __eq__(self, other):
         if isinstance(other, Option):
@@ -118,7 +115,7 @@ class Option:
 
     @staticmethod
     def from_cfg_def(option_definition, left_semantics):
-        """Parse text from the CFG definition into an Option and the choices it is composed of. """
+        """Parse text from the CFG definition into an Option and the choices it is composed of."""
         opt_strs = option_definition.split("|")
 
         for opt_str in opt_strs:
@@ -133,23 +130,20 @@ class Option:
 
             yield opt
 
-    def pretty_print(self, level=0):
-        tabs = level * "    "
+    def pretty_print(self, level=0, indent="    "):
+        tabs = level * indent
         ret = "\n"
-        ret += tabs + "Option(lsemantic='{lsem}', conjs=[".format(
-            lsem=self.lsemantic)
+        ret += tabs + f"Option(lsemantic='{self.lsemantic}', conjs=["
         for conj in self.conjuncts:
             # ret += "\n"
-            # ret += tabs + "    " + "{c},".format(c=conj)
+            # ret += tabs + "    " + f"{conj},"
             ret += " "
             ret += conj.pretty_print()
         ret += "])"
         return ret
 
     def graphviz_id(self):
-        return "Option '{lsem}'".format(lsem=self.lsemantic).replace('"',
-                                                                     '').replace(
-            ":", "")
+        return f"Option '{self.lsemantic}'".replace('"', "").replace(":", "")
 
     def to_graphviz(self, graph):
         for conj in self.conjuncts:
@@ -161,35 +155,37 @@ class Option:
 
 
 class Conjunct:
-    """"A Conjunct is a placeholder in the parse-tree, which can be filled in by an Option or a word"""
+    """A Conjunct is a placeholder in the parse-tree, which can be filled in by an Option or a word"""
 
     def __init__(self, name, rsemantic="", is_variable=False):
-        """:param name the word or variable
-        :param rsemantic what option is the Conjunct part of
-        :param is_variable is the conjunct variable or terminal?"""
+        """
+        :param name: the word or variable
+        :param rsemantic: what option is the Conjunct part of
+        :param is_variable: is the conjunct variable or terminal?
+        """
         self.name = name
         self.rsemantic = rsemantic
         self.is_variable = is_variable
 
     def __repr__(self):
-        return "Conjunct(name='{name}', rsemantic='{r}', is_variable={v})".format(
-            name=self.name, r=self.rsemantic,
-            v=self.is_variable)
+        return f"Conjunct(name='{self.name}', rsemantic='{self.rsemantic}', is_variable={self.is_variable})"
 
     def __eq__(self, other):
         if isinstance(other, Conjunct):
-            return self.name == other.name and self.rsemantic == other.rsemantic and self.is_variable == other.is_variable
+            return (
+                self.name == other.name and self.rsemantic == other.rsemantic and self.is_variable == other.is_variable
+            )
         return False
 
     def pretty_print(self, level=0):
         if self.is_variable or "$" in self.name:
             prefix = self.rsemantic + "="
-            return self.rsemantic + "=" + self.name  # + str(self)
+            return prefix + self.name  # + str(self)
         else:
             return bcolors.OKGREEN + self.name + bcolors.ENDC  # + str(self)
 
     def graphviz_id(self):
-        return "Conjunct {name}".format(name=self.name)
+        return f"Conjunct {self.name}"
 
     def to_graphviz(self, graph):
         graph.node(self.graphviz_id())
@@ -204,8 +200,7 @@ class Rule:
         self.options = options if options else []
 
     def __repr__(self):
-        return "Rule(lname='{lname}', options={opts})".format(lname=self.lname,
-                                                              opts=self.options)
+        return f"Rule(lname='{self.lname}', options={self.options})"
 
     def __eq__(self, other):
         if isinstance(other, Rule):
@@ -217,10 +212,9 @@ class Rule:
     def from_cfg_def(s):
         tmp = s.split(" -> ")
         if len(tmp) != 2:
-            raise Exception("Invalid grammar, please use proper ' -> ' arrows",
-                            tmp)
+            raise Exception("Invalid grammar, please use proper ' -> ' arrows", tmp)
 
-        (lname, lsem, outstr) = parse_next_atom(tmp[0].strip())
+        lname, lsem, outstr = parse_next_atom(tmp[0].strip())
 
         rule = Rule(lname)
 
@@ -228,8 +222,8 @@ class Rule:
 
         return rule
 
-    def pretty_print(self, level=0):
-        tabs = (level) * '    '
+    def pretty_print(self, level=0, indent="    "):
+        tabs = level * indent
         ret = ""
         ret += tabs + self.lname
         for option in self.options:
@@ -237,7 +231,7 @@ class Rule:
         return ret
 
     def graphviz_id(self):
-        return "Rule {lname}".format(lname=self.lname)
+        return f"Rule {self.lname}"
 
     def to_graphviz(self, graph):
         for opt in self.options:
@@ -274,10 +268,10 @@ class Tree:
         # TODO: Make this print like a tree
         return str(zip(self.option.conjuncts, self.subtrees))
 
-    def pretty_print(self, level=0):
+    def pretty_print(self, level=0, indent="    "):
         # print self, level
-        # tabs = (level-1)*'    ' + "│   ├───"
-        tabs = (level) * '    ' + "└───"
+        # tabs = (level-1)*indent + "│   ├───"
+        tabs = level * indent + "└───"
         # tabs = "\t" * level #
         ret = ""  # "#tabs + self.option.pretty_print(level=level)
         for conjunct, subtree in zip(self.option.conjuncts, self.subtrees):
@@ -306,13 +300,13 @@ def parse_next_atom(s):
 
     for i in range(0, len(s)):
         c = s[i]
-        if c == ' ':
+        if c == " ":
             return s[:i], "", s[i:].strip()
-        elif c == '[':
+        elif c == "[":
             j = s.find("]", i)
             if j < 0:
                 raise Exception
-            return s[:i], s[i + 1:j], s[j + 1:].strip()
+            return s[:i], s[i + 1 : j], s[j + 1 :].strip()
 
     return s, "", ""
 
@@ -373,7 +367,7 @@ class CFGParser:
 
         for line in string.replace(";", "\n").split("\n"):
             line = line.strip()
-            if line == "" or line[0] == '#':
+            if line == "" or line[0] == "#":
                 continue
             parser.add_rule(line)
 
@@ -389,12 +383,9 @@ class CFGParser:
             for option in rule.options:
                 for conj in option.conjuncts:
                     if conj.is_variable:
-                        assert conj.name in self.rules, "Rule '{}' is missing".format(
-                            conj.name)
-                    if conj.name[0] == '$':
-                        assert conj.name[
-                               1:] in self.functions, "Function '{}' is missing".format(
-                            conj.name[1:])
+                        assert conj.name in self.rules, f"Rule '{conj.name}' is missing"
+                    if conj.name[0] == "$":
+                        assert conj.name[1:] in self.functions, f"Function '{conj.name[1:]}' is missing"
 
     def verify(self, target=None):
         if target is None:
@@ -425,7 +416,8 @@ class CFGParser:
 
     def get_semantics(self, tree):
         """Get the semantics of a tree.
-        This means that variables are unified with their values, which may be recursively gotten from the tree's subtrees. """
+        This means that variables are unified with their values, which may be recursively gotten from the tree's subtrees.
+        """
         semantics = tree.option.lsemantic
         for i in range(0, len(tree.subtrees)):
             conj = tree.option.conjuncts[i]
@@ -462,14 +454,12 @@ class CFGParser:
             return self.parse_raw(target, words, debug)
 
         except GrammarError as ex:
-            print("grammar_parser, Grammar error: {}".format(ex))
+            print(f"grammar_parser, Grammar error: {ex}")
             return False
 
         except ParseError as ex:
-            print("grammar_parser, Parse error: {}".format(ex))
+            print(f"grammar_parser, Parse error: {ex}")
             return False
-
-        return False
 
     def parse_raw(self, target, words, debug=False):
         """
@@ -495,8 +485,7 @@ class CFGParser:
             words = words.split(" ")
 
         if target not in self.rules:
-            raise Exception(
-                "Target {} not present in grammar rules".format(target))
+            raise Exception(f"Target {target} not present in grammar rules")
 
         rule = self.rules[target]
 
@@ -508,8 +497,7 @@ class CFGParser:
                 if debug:
                     print(T.pretty_print())
                 # Simply take the first tree that successfully parses
-                semantics_str = self.get_semantics(T).replace("<", "[").replace(
-                    ">", "]")
+                semantics_str = self.get_semantics(T).replace("<", "[").replace(">", "]")
                 semantics = yaml.safe_load(semantics_str)
                 # just let the yaml error bubble up, the will give a nice backtrace
                 return semantics
@@ -551,7 +539,7 @@ class CFGParser:
             # Conjunct is a sub-rule, 'check_rules' ensures a sub-rule exists,
             # but functions may introduce new sub-rule calls.
             if conj.name not in self.rules:
-                raise GrammarError("Rule '{}' does not exist".format(conj.name))
+                raise GrammarError(f"Rule '{conj.name}' does not exist")
 
             options = self.rules[conj.name].options
 
@@ -562,8 +550,7 @@ class CFGParser:
             # 'check_rules' ensures the function exists, but a previous
             # $function expansion may be wrong.
             if not func_name in self.functions:
-                raise GrammarError(
-                    "Function '{}' does not exist".format(func_name))
+                raise GrammarError(f"Function '{func_name}' does not exist")
 
             options = self.functions[func_name](words[word_index:])
             # XXX Expanded result should not refer to missing sub-rules or
@@ -595,7 +582,7 @@ class CFGParser:
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     def next_word(self, target, words):
-        if not target in self.rules:
+        if target not in self.rules:
             return False
 
         rule = self.rules[target]
@@ -615,7 +602,7 @@ class CFGParser:
         conj = T.option.conjuncts[idx]
 
         if conj.is_variable:
-            if not conj.name in self.rules:
+            if conj.name not in self.rules:
                 return []
             options = self.rules[conj.name].options
 
@@ -626,7 +613,7 @@ class CFGParser:
             options = self.get_completion_function(func_name)(words)
 
         else:
-            if words == []:
+            if not words:
                 return [conj.name]
             elif conj.name == words[0]:
                 return self._next_word(T.next(idx), words[1:])
@@ -658,9 +645,7 @@ class CFGParser:
     def visualize_options(self, graph, target_rule, previous_words=None, depth=2):
         previous_words = [] if not previous_words else previous_words
 
-        colors = itertools.cycle(
-            ["blue", "green", "red", "cyan", "magenta", "black", "purple",
-             "orange"])
+        colors = itertools.cycle(["blue", "green", "red", "cyan", "magenta", "black", "purple", "orange"])
 
         if previous_words:
             previous_word = previous_words[-1]
@@ -673,14 +658,11 @@ class CFGParser:
         if next_words and depth:
             for next_word in next_words:
                 graph.edge(previous_word, next_word, color=colors.next())
-                self.visualize_options(graph, target_rule,
-                                       previous_words + [next_word],
-                                       depth=depth - 1)
+                self.visualize_options(graph, target_rule, previous_words + [next_word], depth=depth - 1)
 
     def get_unwrapped(self, lname):
         if lname not in self.rules:
-            raise Exception(
-                "Target {} not present in grammar rules".format(lname))
+            raise Exception(f"Target {lname} not present in grammar rules")
 
         rule = self.rules[lname]
 
@@ -689,7 +671,6 @@ class CFGParser:
             conj_strings = []
 
             for conj in opt.conjuncts:
-
                 if conj.is_variable:
                     unwrapped_string = self.get_unwrapped(conj.name)
                     if unwrapped_string:
@@ -710,11 +691,10 @@ class CFGParser:
         unwrapped = self.get_unwrapped(lname)
 
         spec = "(%s)" % unwrapped
-        while re.search('\([^)]+\)', spec):
-            options = re.findall('\([^()]+\)', spec)
+        while re.search("\([^)]+\)", spec):
+            options = re.findall("\([^()]+\)", spec)
             for option in options:
-                spec = spec.replace(option,
-                                    random.choice(option[1:-1].split("|")), 1)
+                spec = spec.replace(option, random.choice(option[1:-1].split("|")), 1)
 
         return spec
 
@@ -731,7 +711,8 @@ if __name__ == "__main__":
         def __init__(self, grammarfile):
             self.parser = CFGParser.fromfile(grammarfile)
 
-        def get_completion_function(self, name):
+        @staticmethod
+        def get_completion_function(name):
             return lambda x: [Option(name, [Conjunct(name.upper())])]
 
         def test(self, rule, depth):
@@ -740,7 +721,7 @@ if __name__ == "__main__":
 
             g = graphviz.Digraph(strict=True)
             self.parser.visualize_options(g, rule, depth=int(depth))
-            g.render('options', view=True)
+            g.render("options", view=True)
 
     tester = Visualizer(grammar_file)
     tester.test(rule, depth=depth)
