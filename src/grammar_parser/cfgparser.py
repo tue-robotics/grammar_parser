@@ -697,31 +697,3 @@ class CFGParser:
                 spec = spec.replace(option, random.choice(option[1:-1].split("|")), 1)
 
         return spec
-
-
-if __name__ == "__main__":
-    import graphviz
-    import sys
-
-    grammar_file = sys.argv[1]
-    rule = sys.argv[2]
-    depth = int(sys.argv[3])
-
-    class Visualizer:
-        def __init__(self, grammarfile):
-            self.parser = CFGParser.fromfile(grammarfile)
-
-        @staticmethod
-        def get_completion_function(name):
-            return lambda x: [Option(name, [Conjunct(name.upper())])]
-
-        def test(self, rule, depth):
-            self.parser.has_completion_function = lambda func_name: True
-            self.parser.get_completion_function = self.get_completion_function
-
-            g = graphviz.Digraph(strict=True)
-            self.parser.visualize_options(g, rule, depth=int(depth))
-            g.render("options", view=True)
-
-    tester = Visualizer(grammar_file)
-    tester.test(rule, depth=depth)

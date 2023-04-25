@@ -5,7 +5,7 @@
 <package format="3">
   <name>grammar_parser</name>
   <version>0.0.1</version>
-  <description>The grammar_parser package</description>
+  <description>Context free grammar parser tools</description>
 
   <maintainer email="loy.vanbeek@gmail.com">Loy van Beek</maintainer>
 
@@ -20,7 +20,10 @@
 
   <depend>rospy</depend>
   <depend>python3-yaml</depend>
-  <depend>python-graphviz-pip</depend>
+
+  <exec_depend>python-graphviz-pip</exec_depend>
+
+  <test_depend>catkin_lint_cmake</test_depend>
 
   <doc_depend>python3-sphinx</doc_depend>
   <doc_depend>python-sphinx-autoapi-pip</doc_depend>
