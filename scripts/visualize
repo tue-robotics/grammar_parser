@@ -1,0 +1,33 @@
+#! /usr/bin/env python
+
+import graphviz
+
+from grammar_parser.cfgparser import CFGParser, Conjunct, Option
+
+
+class Visualizer:
+    def __init__(self, grammarfile):
+        self.parser = CFGParser.fromfile(grammarfile)
+
+    @staticmethod
+    def get_completion_function(name):
+        return lambda x: [Option(name, [Conjunct(name.upper())])]
+
+    def test(self, rule, depth):
+        self.parser.has_completion_function = lambda func_name: True
+        self.parser.get_completion_function = self.get_completion_function
+
+        g = graphviz.Digraph(strict=True)
+        self.parser.visualize_options(g, rule, depth=int(depth))
+        g.render("options", view=True)
+
+
+if __name__ == "__main__":
+    import sys
+
+    grammar_file = sys.argv[1]
+    rule = sys.argv[2]
+    depth = int(sys.argv[3])
+
+    tester = Visualizer(grammar_file)
+    tester.test(rule, depth=depth)

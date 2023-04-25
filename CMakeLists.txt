@@ -41,6 +41,12 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+#############
+## Install ##
+#############
+
+catkin_install_python(PROGRAMS scripts/visualize
+                      DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 #############
 ## Testing ##
