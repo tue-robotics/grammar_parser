@@ -657,7 +657,7 @@ class CFGParser:
 
         if next_words and depth:
             for next_word in next_words:
-                graph.edge(previous_word, next_word, color=colors.next())
+                graph.edge(previous_word, next_word, color=next(colors))
                 self.visualize_options(graph, target_rule, previous_words + [next_word], depth=depth - 1)
 
     def get_unwrapped(self, lname):
