@@ -51,6 +51,8 @@ The semantics are returned to whomever called CFGParser.parse(...), usually the 
 The REPL sends the semantics to the action_server, which grounds the semantics by implementing the actions.
 """
 
+from typing import List, Optional, Tuple, Union
+
 import itertools
 import random
 import re
@@ -94,7 +96,7 @@ class Option:
     """An option is a continuation of a sentence of where there are multiple ways to continue the sentence.
     These choices in an Option are called conjuncts."""
 
-    def __init__(self, lsemantic="", conjs=None):
+    def __init__(self, lsemantic: str = "", conjs: Optional[List] = None) -> None:
         """Constructor of an Option
         :param lsemantic the name of the semantics that the option is the continuation of. E.g. if the lsemantic is some action, this option might be the object to perform that action with.
         :param conjs the choices in this option"""
@@ -104,10 +106,10 @@ class Option:
         else:
             self.conjuncts = []
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Option(lsemantic='{self.lsemantic}', conjs={self.conjuncts})"
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(other, Option):
             return self.lsemantic == other.lsemantic and self.conjuncts == other.conjuncts
 
@@ -130,7 +132,7 @@ class Option:
 
             yield opt
 
-    def pretty_print(self, level=0, indent="    "):
+    def pretty_print(self, level=0, indent="    ") -> str:
         tabs = level * indent
         ret = "\n"
         ret += tabs + f"Option(lsemantic='{self.lsemantic}', conjs=["
@@ -142,10 +144,10 @@ class Option:
         ret += "])"
         return ret
 
-    def graphviz_id(self):
+    def graphviz_id(self) -> str:
         return f"Option '{self.lsemantic}'".replace('"', "").replace(":", "")
 
-    def to_graphviz(self, graph):
+    def to_graphviz(self, graph) -> None:
         for conj in self.conjuncts:
             graph.edge(self.graphviz_id(), conj.graphviz_id())
             conj.to_graphviz(graph)
@@ -177,7 +179,7 @@ class Conjunct:
             )
         return False
 
-    def pretty_print(self, level=0):
+    def pretty_print(self, level=0) -> str:
         if self.is_variable or "$" in self.name:
             prefix = self.rsemantic + "="
             return prefix + self.name  # + str(self)
@@ -374,7 +376,7 @@ class CFGParser:
         parser.check_rules()
         return parser
 
-    def check_rules(self):
+    def check_rules(self) -> None:
         """
         Verify completeness of the loaded grammar, no rules that refer to missing
         sub-rules and no functions that don't exist.
@@ -394,6 +396,7 @@ class CFGParser:
                 self.get_unwrapped(r)
         else:
             self.get_unwrapped(target)
+
         return True
 
     def add_rule(self, s):
@@ -431,7 +434,7 @@ class CFGParser:
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def parse(self, target, words, debug=False):
+    def parse(self, target: str, words: Union[str, List[str]], debug=False):
         """
         Parse the given sentence against the grammar loaded in the class. This
         method hides all errors (and returns False in that case). Use the
@@ -461,7 +464,7 @@ class CFGParser:
             print(f"grammar_parser, Parse error: {ex}")
             return False
 
-    def parse_raw(self, target, words, debug=False):
+    def parse_raw(self, target: str, words: Union[str, List[str]], debug: bool = False):
         """
         Parse the given sentence against the grammar loaded in the class. This
         method throws exceptions on failures, the self.parse function returns
@@ -498,8 +501,8 @@ class CFGParser:
                     print(T.pretty_print())
                 # Simply take the first tree that successfully parses
                 semantics_str = self.get_semantics(T).replace("<", "[").replace(">", "]")
-                semantics = yaml.safe_load(semantics_str)
-                # just let the yaml error bubble up, the will give a nice backtrace
+                semantics: dict = yaml.safe_load(semantics_str)
+                # just let the yaml error bubble up, this will give a nice backtrace
                 return semantics
 
             elif best_fail is None or best_fail < ret:
@@ -508,7 +511,7 @@ class CFGParser:
         assert best_fail is not None
         raise ParseError(words, best_fail)
 
-    def _parse(self, TIdx, words, word_index):
+    def _parse(self, TIdx: Tuple, words: List[str], word_index: int) -> Optional[int]:
         """
         Try to match the provided words on the given grammar rule option.
 
@@ -581,7 +584,7 @@ class CFGParser:
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def next_word(self, target, words):
+    def next_word(self, target: str, words: list) -> list:
         if target not in self.rules:
             return False
 
@@ -593,7 +596,7 @@ class CFGParser:
 
         return next_words
 
-    def _next_word(self, TIdx, words):
+    def _next_word(self, TIdx: tuple, words: list) -> list:
         (T, idx) = TIdx
 
         if not T:
@@ -627,22 +630,22 @@ class CFGParser:
 
         return next_words
 
-    def has_completion_function(self, func_name):
+    def has_completion_function(self, func_name: str) -> bool:
         return func_name in self.functions
 
-    def get_completion_function(self, func_name):
+    def get_completion_function(self, func_name: str):
         return self.functions[func_name]
 
     @staticmethod
-    def graphviz_id():
+    def graphviz_id() -> str:
         return "CFGParser"
 
-    def to_graphviz(self, graph):
+    def to_graphviz(self, graph) -> None:
         for name, rule in self.rules.items():
             graph.edge(self.graphviz_id(), rule.graphviz_id())
             rule.to_graphviz(graph)
 
-    def visualize_options(self, graph, target_rule, previous_words=None, depth=2):
+    def visualize_options(self, graph, target_rule, previous_words=None, depth: int = 2) -> None:
         previous_words = [] if not previous_words else previous_words
 
         colors = itertools.cycle(["blue", "green", "red", "cyan", "magenta", "black", "purple", "orange"])
@@ -660,7 +663,7 @@ class CFGParser:
                 graph.edge(previous_word, next_word, color=next(colors))
                 self.visualize_options(graph, target_rule, previous_words + [next_word], depth=depth - 1)
 
-    def get_unwrapped(self, lname):
+    def get_unwrapped(self, lname) -> str:
         if lname not in self.rules:
             raise Exception(f"Target {lname} not present in grammar rules")
 
@@ -687,7 +690,7 @@ class CFGParser:
 
         return s
 
-    def get_random_sentence(self, lname):
+    def get_random_sentence(self, lname) -> str:
         unwrapped = self.get_unwrapped(lname)
 
         spec = "(%s)" % unwrapped
