@@ -56,6 +56,8 @@ from typing import List, Optional, Tuple, Union
 import itertools
 import random
 import re
+
+import rospy
 import yaml
 
 
@@ -457,12 +459,12 @@ class CFGParser:
             return self.parse_raw(target, words, debug)
 
         except GrammarError as ex:
-            print(f"grammar_parser, Grammar error: {ex}")
-            return False
+            rospy.logerr(f"grammar_parser, Grammar error: {ex}")
+            return {}
 
         except ParseError as ex:
-            print(f"grammar_parser, Parse error: {ex}")
-            return False
+            rospy.logerr(f"grammar_parser, Parse error: {ex}")
+            return {}
 
     def parse_raw(self, target: str, words: Union[str, List[str]], debug: bool = False):
         """
@@ -552,7 +554,7 @@ class CFGParser:
 
             # 'check_rules' ensures the function exists, but a previous
             # $function expansion may be wrong.
-            if not func_name in self.functions:
+            if func_name not in self.functions:
                 raise GrammarError(f"Function '{func_name}' does not exist")
 
             options = self.functions[func_name](words[word_index:])
@@ -586,7 +588,7 @@ class CFGParser:
 
     def next_word(self, target: str, words: list) -> list:
         if target not in self.rules:
-            return False
+            return []
 
         rule = self.rules[target]
 
