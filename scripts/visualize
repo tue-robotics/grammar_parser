@@ -13,7 +13,7 @@ class Visualizer:
     def get_completion_function(name):
         return lambda x: [Option(name, [Conjunct(name.upper())])]
 
-    def test(self, rule, depth):
+    def test(self, rule: str, depth: int):
         self.parser.has_completion_function = lambda func_name: True
         self.parser.get_completion_function = self.get_completion_function
 
