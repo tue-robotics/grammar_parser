@@ -99,21 +99,21 @@ class TestCfgParser(unittest.TestCase):
 
 class TestParseNextAtom(unittest.TestCase):
     def test_parse_next_atom_1(self):
-        (name, semantics, remaining) = parse_next_atom("""SIDE["left"]""")
+        name, semantics, remaining = parse_next_atom("""SIDE["left"]""")
 
         self.assertEqual(name, "SIDE")
         self.assertEqual(semantics, '"left"')
         self.assertEqual(remaining, "")
 
     def test_parse_next_atom_2(self):
-        (name, semantics, remaining) = parse_next_atom("""VP["action": A]""")
+        name, semantics, remaining = parse_next_atom("""VP["action": A]""")
 
         self.assertEqual(name, "VP")
         self.assertEqual(semantics, '"action": A')
         self.assertEqual(remaining, "")
 
     def test_parse_next_atom_3(self):
-        (name, semantics, remaining) = parse_next_atom("""VP["action": "arm-goal", "symbolic": "reset", "side": S]""")
+        name, semantics, remaining = parse_next_atom("""VP["action": "arm-goal", "symbolic": "reset", "side": S]""")
 
         self.assertEqual(name, "VP")
         self.assertEqual(semantics, '"action": "arm-goal", "symbolic": "reset", "side": S')
@@ -171,11 +171,9 @@ def normalize_string(text):
 
 class TestSingleRule(unittest.TestCase):
     def setUp(self):
-        grammar = normalize_string(
-            """
+        grammar = normalize_string("""
             T[{"key":"value"}] -> a b c
-            """
-        )
+            """)
 
         self.target_rule = "T"
         self.p = CFGParser.fromstring(grammar)
@@ -210,13 +208,11 @@ class TestSingleRule(unittest.TestCase):
 
 class TestSubrules(unittest.TestCase):
     def setUp(self):
-        grammar = normalize_string(
-            """
+        grammar = normalize_string("""
             T[X] -> A[X] | B[X]
             A["a"] -> p
             B["b"] -> q
-        """
-        )
+        """)
 
         self.target_rule = "T"
         self.p = CFGParser.fromstring(grammar)
@@ -230,15 +226,13 @@ class TestSubrules(unittest.TestCase):
 
 class TestEmptySubrules(unittest.TestCase):
     def setUp(self):
-        grammar = normalize_string(
-            """
+        grammar = normalize_string("""
             T[X] -> A[X] | B[X]
             A["a"] -> p D
             B["b"] -> q E
             D -> | r
             E -> r |
-        """
-        )
+        """)
 
         self.target_rule = "T"
         self.p = CFGParser.fromstring(grammar)
